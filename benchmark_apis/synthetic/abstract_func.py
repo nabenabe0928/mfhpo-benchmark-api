@@ -1,11 +1,26 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import ClassVar
+from dataclasses import dataclass
+from typing import ClassVar, TypedDict
 
 import ConfigSpace as CS
 
 import numpy as np
+
+
+@dataclass(frozen=True)
+class _ResultKeys:
+    loss: str = "loss"
+    runtime: str = "runtime"
+
+
+class ResultType(TypedDict):
+    loss: float
+    runtime: float
+
+
+RESULT_KEYS = _ResultKeys()
 
 
 class MFAbstractFunc(metaclass=ABCMeta):
@@ -67,12 +82,12 @@ class MFAbstractFunc(metaclass=ABCMeta):
         *,
         fidels: dict[str, int],
         seed: int | None = None,
-    ) -> dict[str, float]:
+    ) -> ResultType:
         x = np.array([eval_config[f"x{d}"] for d in range(self._dim)])
         z = np.array([fidels[k] / max_fidel for k, max_fidel in self.max_fidels.items()])
         loss = self._objective(x=x, z=z)
         runtime = self._runtime(x=x, z=z)
-        return dict(loss=loss, runtime=runtime)
+        return {RESULT_KEYS.loss: loss, RESULT_KEYS.runtime: runtime}  # type: ignore
 
     @property
     def dim(self) -> int:

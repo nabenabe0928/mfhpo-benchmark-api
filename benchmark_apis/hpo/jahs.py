@@ -160,4 +160,4 @@ class JAHSBench201(AbstractBench):
 
     @property
     def fidel_keys(self) -> list[str]:
-        return list(_FIDEL_KEYS.__dict__.keys())
+        return list(_FIDEL_KEYS.__dict__.values())
