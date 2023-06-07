@@ -7,9 +7,9 @@ from typing import ClassVar, Final, TypedDict
 
 import ConfigSpace as CS
 
-import numpy as np
-
 from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES
+
+import numpy as np
 
 
 FIDEL_KEY: Final[str] = "epoch"
@@ -39,7 +39,7 @@ class HPOLibDatabase:
                 "Then extract the pkl file using https://github.com/nabenabe0928/hpolib-extractor."
             )
 
-    def __getitem__(self, key: str) -> dict[str, RowDataType]:
+    def __getitem__(self, key: str) -> RowDataType:
         return self._db[key]
 
 
@@ -53,8 +53,8 @@ class HPOLib(AbstractBench):
     """
 
     _target_metric: ClassVar[str] = "valid_mse"
-    _N_DATASETS: Final[int] = 4
-    _DATASET_NAMES: Final[tuple[str]] = (
+    _N_DATASETS: ClassVar[int] = 4
+    _DATASET_NAMES: tuple[str, ...] = (
         "slice-localization",
         "protein-structure",
         "naval-propulsion",
@@ -92,11 +92,15 @@ class HPOLib(AbstractBench):
             raise ValueError("data must be provided when `keep_benchdata` is False")
 
         db = benchdata if self._db is None else self._db
+        assert db is not None  # mypy redefinition
         fidel = int(fidels[FIDEL_KEY])
         idx = seed % 4 if seed is not None else self._rng.randint(4)
         key = json.dumps({k: self._value_range[k][int(v)] for k, v in eval_config.items()}, sort_keys=True)
-        loss = db[key][self._target_metric][idx][fidel - 1]
-        runtime = db[key]["runtime"][idx] * fidel / self.max_fidels[FIDEL_KEY]
+
+        row: RowDataType = db[key]
+        assert self._target_metric in ["runtime", "valid_mse"]  # mypy redefinition
+        loss = row[self._target_metric][idx][fidel - 1]  # type: ignore
+        runtime = row["runtime"][idx] * fidel / self.max_fidels[FIDEL_KEY]
         return dict(loss=np.log(loss), runtime=runtime)
 
     @property

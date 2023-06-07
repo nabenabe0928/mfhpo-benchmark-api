@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import ClassVar, Final
+from typing import ClassVar
 
 import ConfigSpace as CS
 
@@ -27,7 +27,7 @@ class MFAbstractFunc(metaclass=ABCMeta):
     """
 
     _DATASET_NAMES: list[str] | None = None
-    _BENCH_TYPE: Final[ClassVar[str]] = "SYNTHETIC"
+    _BENCH_TYPE: ClassVar[str] = "SYNTHETIC"
     _DEFAULT_FIDEL_DIM: ClassVar[int]
 
     def __init__(

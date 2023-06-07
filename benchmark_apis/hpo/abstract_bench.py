@@ -1,25 +1,25 @@
 from __future__ import annotations
 
+import json
+import os
 from abc import ABCMeta, abstractmethod
 from typing import Any, ClassVar, Final
-import os
 
 import ConfigSpace as CS
 
-import json
 
 import numpy as np
 
 
 DATA_DIR_NAME: Final[str] = os.path.join(os.environ["HOME"], "tabular_benchmarks")
 SEARCH_SPACE_PATH: Final[str] = "benchmark_apis/hpo/discrete_search_spaces.json"
-VALUE_RANGES: Final[dict[str, list[int | float | str | bool]]] = json.load(open(SEARCH_SPACE_PATH))
+VALUE_RANGES: Final[dict[str, dict[str, list[int | float | str | bool]]]] = json.load(open(SEARCH_SPACE_PATH))
 
 
 class AbstractBench(metaclass=ABCMeta):
-    _BENCH_TYPE: Final[ClassVar[str]] = "HPO"
+    _BENCH_TYPE: ClassVar[str] = "HPO"
     _target_metric: ClassVar[str]
-    _value_range: ClassVar[dict[str, list[int | float | str | bool]]]
+    _value_range: dict[str, list[int | float | str | bool]]
     _rng: np.random.RandomState
     dataset_name: str
 

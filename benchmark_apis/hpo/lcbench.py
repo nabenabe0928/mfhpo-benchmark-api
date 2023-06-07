@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import ClassVar, Final
+from typing import ClassVar
 
 import ConfigSpace as CS
 
@@ -38,7 +38,7 @@ class LCBenchSurrogate:
         local_config.set_data_path(DATA_DIR_NAME)
 
     def __call__(self, eval_config: dict[str, int | float], fidel: int) -> dict[str, float]:
-        _eval_config = eval_config.copy()
+        _eval_config: dict[str, int | float | str] = eval_config.copy()  # type: ignore
         _eval_config["OpenML_task_id"] = self._dataset_id
         _eval_config[FIDEL_KEY] = fidel
         output = self._surrogate.objective_function(_eval_config)[0]
@@ -48,9 +48,9 @@ class LCBenchSurrogate:
 class LCBench(AbstractBench):
     # https://syncandshare.lrz.de/getlink/fiCMkzqj1bv1LfCUyvZKmLvd/
     _target_metric: ClassVar[str] = "val_balanced_accuracy"
-    _TRUE_MAX_FIDEL: Final[ClassVar[int]] = 52
-    _N_DATASETS: Final[ClassVar[int]] = 34
-    _DATASET_NAMES: Final[tuple[str]] = (
+    _TRUE_MAX_FIDEL: ClassVar[int] = 52
+    _N_DATASETS: ClassVar[int] = 34
+    _DATASET_NAMES: tuple[str, ...] = (
         "kddcup09",
         "covertype",
         "amazon-employee-access",
@@ -158,6 +158,7 @@ class LCBench(AbstractBench):
             raise ValueError("data must be provided when `keep_benchdata` is False")
 
         surrogate = benchdata if self._surrogate is None else self._surrogate
+        assert surrogate is not None  # mypy redefinition
         fidel = int(min(self._TRUE_MAX_FIDEL, fidels[FIDEL_KEY]))
         self._validate_config(eval_config=eval_config)
         return surrogate(eval_config=eval_config, fidel=fidel)

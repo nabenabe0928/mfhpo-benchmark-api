@@ -53,8 +53,8 @@ class JAHSBenchSurrogate:
 class JAHSBench201(AbstractBench):
     # https://ml.informatik.uni-freiburg.de/research-artifacts/jahs_bench_201/v1.1.0/assembled_surrogates.tar
     _target_metric: ClassVar[str] = "valid-acc"
-    _N_DATASETS: Final[int] = 3
-    _DATASET_NAMES: Final[tuple[str]] = ("cifar10", "fashion-mnist", "colorectal-histology")
+    _N_DATASETS: ClassVar[int] = 3
+    _DATASET_NAMES: tuple[str, ...] = ("cifar10", "fashion-mnist", "colorectal-histology")
 
     def __init__(
         self,
@@ -84,6 +84,7 @@ class JAHSBench201(AbstractBench):
             raise ValueError("data must be provided when `keep_benchdata` is False")
 
         surrogate = benchdata if self._surrogate is None else self._surrogate
+        assert surrogate is not None  # mypy redefinition
         EPS = 1e-12
         _eval_config = {
             k: self._value_range[k][int(v)] if k in self._value_range else float(v) for k, v in eval_config.items()

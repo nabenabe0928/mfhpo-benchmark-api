@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-
-from typing import ClassVar, Final
+from typing import ClassVar
 
 from benchmark_apis.synthetic.abstract_func import MFAbstractFunc
 
@@ -41,7 +40,7 @@ class MFBranin(MFAbstractFunc):
             URL: https://arxiv.org/pdf/1703.06240.pdf
     """
 
-    _DEFAULT_FIDEL_DIM: Final[ClassVar[int]] = 3
+    _DEFAULT_FIDEL_DIM: ClassVar[int] = 3
 
     def __init__(
         self,

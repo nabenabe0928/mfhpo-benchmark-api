@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import ClassVar, Final, Literal
+from typing import ClassVar, Literal
 
 from benchmark_apis.synthetic.abstract_func import MFAbstractFunc
 
@@ -32,7 +32,7 @@ class MFHartmann(MFAbstractFunc):
             URL: https://arxiv.org/pdf/1703.06240.pdf
     """
 
-    _DEFAULT_FIDEL_DIM: Final[ClassVar[int]] = 4
+    _DEFAULT_FIDEL_DIM: ClassVar[int] = 4
 
     def __init__(
         self,
@@ -44,7 +44,7 @@ class MFHartmann(MFAbstractFunc):
     ):
         super().__init__(seed=seed, runtime_factor=runtime_factor, fidel_dim=fidel_dim)
         if dim not in [3, 6]:
-            self._raise_error_for_wrong_dim()
+            self._raise_error_for_wrong_dim(dim=dim)
 
         self._dim = int(dim)
         noise_var = 0.01 if dim == 3 else 0.05
@@ -77,7 +77,7 @@ class MFHartmann(MFAbstractFunc):
                 dtype=np.float64,
             )
         else:
-            self._raise_error_for_wrong_dim()
+            self._raise_error_for_wrong_dim(dim=self.dim)
 
     @property
     def P(self) -> np.ndarray:
@@ -96,7 +96,7 @@ class MFHartmann(MFAbstractFunc):
                 dtype=np.float64,
             )
         else:
-            self._raise_error_for_wrong_dim()
+            self._raise_error_for_wrong_dim(dim=self.dim)
 
     def _objective(self, x: np.ndarray, z: np.ndarray) -> float:
         alphas = self.alphas - self._bias * (1 - z)
