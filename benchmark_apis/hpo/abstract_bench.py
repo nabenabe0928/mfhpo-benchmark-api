@@ -3,14 +3,28 @@ from __future__ import annotations
 import json
 import os
 from abc import ABCMeta, abstractmethod
-from typing import Any, ClassVar, Final
+from dataclasses import dataclass
+from typing import Any, ClassVar, Final, Optional, TypedDict
 
 import ConfigSpace as CS
-
 
 import numpy as np
 
 
+@dataclass(frozen=True)
+class _ResultKeys:
+    loss: str = "loss"
+    runtime: str = "runtime"
+    model_size: str = "model_size"
+
+
+class ResultType(TypedDict):
+    runtime: float
+    loss: Optional[float]
+    model_size: Optional[float]
+
+
+RESULT_KEYS = _ResultKeys()
 DATA_DIR_NAME: Final[str] = os.path.join(os.environ["HOME"], "tabular_benchmarks")
 SEARCH_SPACE_PATH: Final[str] = "benchmark_apis/hpo/discrete_search_spaces.json"
 VALUE_RANGES: Final[dict[str, dict[str, list[int | float | str | bool]]]] = json.load(open(SEARCH_SPACE_PATH))
@@ -18,11 +32,13 @@ VALUE_RANGES: Final[dict[str, dict[str, list[int | float | str | bool]]]] = json
 
 class AbstractBench(metaclass=ABCMeta):
     _BENCH_TYPE: ClassVar[str] = "HPO"
-    _FIDEL_KEYS: ClassVar[list[str]]
     _TARGET_METRIC_KEYS: ClassVar[list[str]]
     _N_DATASETS: ClassVar[int]
     _DATASET_NAMES: ClassVar[tuple[str, ...]]
     _MAX_EPOCH: ClassVar[int]
+    _min_epoch: int
+    _max_epoch: int
+    _target_metrics: list[str]
     _value_range: dict[str, list[int | float | str | bool]]
     _rng: np.random.RandomState
     dataset_name: str
@@ -30,13 +46,15 @@ class AbstractBench(metaclass=ABCMeta):
     def reseed(self, seed: int) -> None:
         self._rng = np.random.RandomState(seed)
 
-    def _validate_target_metrics(self, target_metrics: list[str]) -> None:
+    def _validate_target_metrics(self) -> None:
+        target_metrics = self._target_metrics
         if any(tm not in self._TARGET_METRIC_KEYS for tm in target_metrics):
             raise ValueError(
                 f"All elements in target_metrics must be in {self._TARGET_METRIC_KEYS}, but got {target_metrics}"
             )
 
-    def _validate_epochs(self, min_epoch: int, max_epoch: int) -> None:
+    def _validate_epochs(self) -> None:
+        min_epoch, max_epoch = self._min_epoch, self._max_epoch
         if min_epoch <= 0 or max_epoch > self._MAX_EPOCH:
             raise ValueError(f"epoch must be in [1, {self._MAX_EPOCH}], but got {min_epoch=} and {max_epoch=}")
         if min_epoch >= max_epoch:

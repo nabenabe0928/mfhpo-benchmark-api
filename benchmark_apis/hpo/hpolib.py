@@ -3,26 +3,31 @@ from __future__ import annotations
 import json
 import os
 import pickle
-from enum import Enum
+from dataclasses import dataclass
 from typing import ClassVar, TypedDict
 
 import ConfigSpace as CS
 
-from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES
+from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, RESULT_KEYS, ResultType, VALUE_RANGES
 
 import numpy as np
+
+
+@dataclass(frozen=True)
+class _TargetMetricKeys:
+    loss: str = "valid_mse"
+    runtime: str = "runtime"
+    model_size: str = "n_params"
+
+
+_TARGET_KEYS = _TargetMetricKeys()
+_FIDEL_KEY = "epoch"
 
 
 class RowDataType(TypedDict):
     valid_mse: list[dict[int, float]]
     runtime: list[float]
     n_params: list[int]
-
-
-class _TargetMetricKeys(Enum):
-    loss: str = "valid_mse"
-    runtime: str = "runtime"
-    model_size: str = "n_params"
 
 
 class HPOLibDatabase:
@@ -59,8 +64,7 @@ class HPOLib(AbstractBench):
 
     _N_DATASETS: ClassVar[int] = 4
     _MAX_EPOCH: ClassVar[int] = 100
-    _FIDEL_KEYS: ClassVar[list[str]] = ["epoch"]
-    _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k.name for k in _TargetMetricKeys]
+    _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k for k in _TARGET_KEYS.__dict__.keys()]
     _DATASET_NAMES: ClassVar[tuple[str, ...]] = (
         "slice-localization",
         "protein-structure",
@@ -72,7 +76,7 @@ class HPOLib(AbstractBench):
         self,
         dataset_id: int,
         seed: int | None = None,
-        target_metrics: list[str] = [_TargetMetricKeys.loss.name],
+        target_metrics: list[str] = [RESULT_KEYS.loss],
         min_epoch: int = 11,
         max_epoch: int = 100,
         keep_benchdata: bool = True,
@@ -89,8 +93,8 @@ class HPOLib(AbstractBench):
         self._min_epoch, self._max_epoch = min_epoch, max_epoch
         self._target_metrics = target_metrics[:]
 
-        self._validate_target_metrics(target_metrics)
-        self._validate_epochs(min_epoch=min_epoch, max_epoch=max_epoch)
+        self._validate_target_metrics()
+        self._validate_epochs()
 
     def get_benchdata(self) -> HPOLibDatabase:
         return HPOLibDatabase(self.dataset_name)
@@ -102,27 +106,24 @@ class HPOLib(AbstractBench):
         fidels: dict[str, int] = {},
         seed: int | None = None,
         benchdata: HPOLibDatabase | None = None,
-    ) -> dict[str, float]:
+    ) -> ResultType:
         if benchdata is None and self._db is None:
             raise ValueError("data must be provided when `keep_benchdata` is False")
 
         db = benchdata if self._db is None else self._db
         assert db is not None  # mypy redefinition
-        fidel = int(fidels.get(self._FIDEL_KEYS[0], self._max_epoch))
+        fidel = int(fidels.get(_FIDEL_KEY, self._max_epoch))
         idx = seed % 4 if seed is not None else self._rng.randint(4)
         key = json.dumps({k: self._value_range[k][int(v)] for k, v in eval_config.items()}, sort_keys=True)
 
         row: RowDataType = db[key]
-        full_runtime = row[_TargetMetricKeys.runtime.value][idx]  # type: ignore
-        output: dict[str, float] = {
-            _TargetMetricKeys.runtime.name: full_runtime * fidel / self.max_fidels[self._FIDEL_KEYS[0]]
-        }
+        full_runtime = row[_TARGET_KEYS.runtime][idx]  # type: ignore
+        output: ResultType = {RESULT_KEYS.runtime: full_runtime * fidel / self.max_fidels[_FIDEL_KEY]}  # type: ignore
 
-        loss_key, size_key = _TargetMetricKeys.loss.name, _TargetMetricKeys.model_size.name
-        if loss_key in self._target_metrics:
-            output[loss_key] = np.log(row[_TargetMetricKeys.loss.value][idx][fidel - 1])  # type: ignore
-        if size_key in self._target_metrics:
-            output[size_key] = float(row[_TargetMetricKeys.model_size.value][idx])  # type: ignore
+        if RESULT_KEYS.loss in self._target_metrics:
+            output[RESULT_KEYS.loss] = np.log(row[_TARGET_KEYS.loss][idx][fidel - 1])  # type: ignore
+        if RESULT_KEYS.model_size in self._target_metrics:
+            output[RESULT_KEYS.model_size] = float(row[_TARGET_KEYS.model_size][idx])  # type: ignore
 
         return output
 
@@ -132,12 +133,12 @@ class HPOLib(AbstractBench):
 
     @property
     def min_fidels(self) -> dict[str, int | float]:
-        return {self._FIDEL_KEYS[0]: self._min_epoch}
+        return {_FIDEL_KEY: self._min_epoch}
 
     @property
     def max_fidels(self) -> dict[str, int | float]:
-        return {self._FIDEL_KEYS[0]: self._max_epoch}
+        return {_FIDEL_KEY: self._max_epoch}
 
     @property
     def fidel_keys(self) -> list[str]:
-        return self._FIDEL_KEYS[:]
+        return [_FIDEL_KEY]
