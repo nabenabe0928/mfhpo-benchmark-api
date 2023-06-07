@@ -24,6 +24,13 @@ class MFHartmann(MFAbstractFunc):
         runtime_factor (float):
             The runtime factor to change the maximum runtime.
             If max_fidel is given, the runtime will be the `runtime_factor` seconds.
+        fidel_dim (int):
+            The dimensionality of fidelity.
+            By default, we use only one fidelity, but we can optionally increase the fidelity dimension to 4.
+        min_fidel (int):
+            The minimum fidelity used in MFO algorithms.
+        max_fidel (int):
+            The maximum fidelity used in MFO algorithms.
 
     Reference:
         Page 18 of the following paper:
@@ -40,9 +47,13 @@ class MFHartmann(MFAbstractFunc):
         fidel_dim: int = 1,
         seed: int | None = None,
         bias: float = 0.1,
+        min_fidel: int = 11,
+        max_fidel: int = 100,
         runtime_factor: float = 3600.0,
     ):
-        super().__init__(seed=seed, runtime_factor=runtime_factor, fidel_dim=fidel_dim)
+        super().__init__(
+            fidel_dim=fidel_dim, seed=seed, runtime_factor=runtime_factor, min_fidel=min_fidel, max_fidel=max_fidel
+        )
         if dim not in [3, 6]:
             self._raise_error_for_wrong_dim(dim=dim)
 
@@ -99,9 +110,9 @@ class MFHartmann(MFAbstractFunc):
             self._raise_error_for_wrong_dim(dim=self.dim)
 
     def _objective(self, x: np.ndarray, z: np.ndarray) -> float:
-        alphas = self.alphas - self._bias * (1 - z)
+        alphas = self.alphas - self.bias * (1 - z)
         loss = -alphas @ np.exp(np.sum(-self.A * (x - self.P) ** 2, axis=-1))
-        noise = self.noise_std * self._rng.normal()
+        noise = self._noise_std * self._rng.normal()
         return float(loss + noise)
 
     def _runtime(self, x: np.ndarray, z: np.ndarray) -> float:

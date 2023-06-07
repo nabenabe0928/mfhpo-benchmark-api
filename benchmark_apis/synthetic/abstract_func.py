@@ -33,6 +33,13 @@ class MFAbstractFunc(metaclass=ABCMeta):
         runtime_factor (float):
             The runtime factor to change the maximum runtime.
             If max_fidel is given, the runtime will be the `runtime_factor` seconds.
+        fidel_dim (int):
+            The dimensionality of fidelity.
+            By default, we use only one fidelity, but we can optionally increase the fidelity dimension.
+        min_fidel (int):
+            The minimum fidelity used in MFO algorithms.
+        max_fidel (int):
+            The maximum fidelity used in MFO algorithms.
 
     Reference:
         Page 18 of the following paper:
@@ -48,8 +55,10 @@ class MFAbstractFunc(metaclass=ABCMeta):
     def __init__(
         self,
         fidel_dim: int,
-        seed: int | None = None,
-        runtime_factor: float = 3600.0,
+        min_fidel: int,
+        max_fidel: int,
+        seed: int | None,
+        runtime_factor: float,
     ):
         if runtime_factor <= 0:
             raise ValueError(f"`runtime_factor` must be positive, but got {runtime_factor}")
@@ -64,6 +73,15 @@ class MFAbstractFunc(metaclass=ABCMeta):
         self._runtime_factor = runtime_factor
         self._dim: int
         self._noise_std: float
+        self._min_fidel, self._max_fidel = min_fidel, max_fidel
+        self._validate_fidels()
+
+    def _validate_fidels(self) -> None:
+        min_fidel, max_fidel = self._min_fidel, self._max_fidel
+        if min_fidel >= max_fidel:
+            raise ValueError(f"min_fidel < max_fidel must hold, but got {min_fidel=} and {max_fidel=}")
+        if min_fidel <= 0:
+            raise ValueError(f"min_fidel must be in [1, {self._max_fidel}], but got {min_fidel=} and {max_fidel=}")
 
     def reseed(self, seed: int) -> None:
         self._rng = np.random.RandomState(seed)
@@ -76,15 +94,25 @@ class MFAbstractFunc(metaclass=ABCMeta):
     def _runtime(self, x: np.ndarray, z: np.ndarray) -> float:
         raise NotImplementedError
 
+    def _validate_config(self, x: np.ndarray, z: np.ndarray) -> None:
+        if np.any((x < 0.0) | (x > 1.0)):
+            raise ValueError("All elements in x must be in [0.0, 1.0]")
+        if np.any((z < self._min_fidel / self._max_fidel) | (z > 1.0)):
+            raise ValueError(f"All elements in fidels must be in [{self._min_fidel}, {self._max_fidel}]")
+
     def __call__(
         self,
         eval_config: dict[str, float],
         *,
-        fidels: dict[str, int],
+        fidels: dict[str, int] = {},
         seed: int | None = None,
     ) -> ResultType:
+        if len(fidels) != self.fidel_dim:
+            raise ValueError(f"The provided fidelity dimension is {self.fidel_dim}, " f"but got {fidels}")
+
         x = np.array([eval_config[f"x{d}"] for d in range(self._dim)])
         z = np.array([fidels[k] / max_fidel for k, max_fidel in self.max_fidels.items()])
+        self._validate_config(x=x, z=z)
         loss = self._objective(x=x, z=z)
         runtime = self._runtime(x=x, z=z)
         return {RESULT_KEYS.loss: loss, RESULT_KEYS.runtime: runtime}  # type: ignore
@@ -98,17 +126,13 @@ class MFAbstractFunc(metaclass=ABCMeta):
         return self._fidel_dim
 
     @property
-    def runtime_factor(self) -> float:
-        return self._runtime_factor
-
-    @property
-    def min_fidels(self) -> dict[str, int | float]:
+    def min_fidels(self) -> dict[str, int]:
         # the real minimum is 3
-        return {f"z{d}": 11 for d in range(self.fidel_dim)}
+        return {f"z{d}": self._min_fidel for d in range(self.fidel_dim)}
 
     @property
-    def max_fidels(self) -> dict[str, int | float]:
-        return {f"z{d}": 100 for d in range(self.fidel_dim)}
+    def max_fidels(self) -> dict[str, int]:
+        return {f"z{d}": self._max_fidel for d in range(self.fidel_dim)}
 
     @property
     def fidel_keys(self) -> list[str]:
@@ -119,7 +143,3 @@ class MFAbstractFunc(metaclass=ABCMeta):
         config_space = CS.ConfigurationSpace()
         config_space.add_hyperparameters([CS.UniformFloatHyperparameter(f"x{d}", 0.0, 1.0) for d in range(self._dim)])
         return config_space
-
-    @property
-    def noise_std(self) -> float:
-        return self._noise_std

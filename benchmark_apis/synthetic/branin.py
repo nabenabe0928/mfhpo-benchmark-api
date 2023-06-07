@@ -32,6 +32,13 @@ class MFBranin(MFAbstractFunc):
         runtime_factor (float):
             The runtime factor to change the maximum runtime.
             If max_fidel is given, the runtime will be the `runtime_factor` seconds.
+        fidel_dim (int):
+            The dimensionality of fidelity.
+            By default, we use only one fidelity, but we can optionally increase the fidelity dimension to 3.
+        min_fidel (int):
+            The minimum fidelity used in MFO algorithms.
+        max_fidel (int):
+            The maximum fidelity used in MFO algorithms.
 
     Reference:
         Page 18 of the following paper:
@@ -49,9 +56,13 @@ class MFBranin(MFAbstractFunc):
         delta_c: float = 0.1,
         delta_t: float = 5e-3,
         seed: int | None = None,
+        min_fidel: int = 11,
+        max_fidel: int = 100,
         runtime_factor: float = 3600.0,
     ):
-        super().__init__(fidel_dim=fidel_dim, seed=seed, runtime_factor=runtime_factor)
+        super().__init__(
+            fidel_dim=fidel_dim, seed=seed, runtime_factor=runtime_factor, min_fidel=min_fidel, max_fidel=max_fidel
+        )
         self._noise_std = float(np.sqrt(0.05))
         self._dim = 2
         self._delta_b, self._delta_c, self._delta_t = delta_b, delta_c, delta_t
@@ -87,7 +98,7 @@ class MFBranin(MFAbstractFunc):
             + coefs.s * (1 - coefs.t) * np.cos(x1)
             + coefs.s
         )
-        noise = self.noise_std * self._rng.normal()
+        noise = self._noise_std * self._rng.normal()
         return float(loss + noise)
 
     def _runtime(self, x: np.ndarray, z: np.ndarray) -> float:
