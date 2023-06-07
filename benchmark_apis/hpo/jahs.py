@@ -72,7 +72,37 @@ class JAHSBenchSurrogate:
 
 
 class JAHSBench201(AbstractBench):
-    # https://ml.informatik.uni-freiburg.de/research-artifacts/jahs_bench_201/v1.1.0/assembled_surrogates.tar
+    """The class for JAHS-Bench-201.
+
+    Args:
+        dataset_id (int):
+            The ID of the dataset.
+        seed (int | None):
+            The random seed to be used.
+        target_metrics (list[str]):
+            The target metrics to return.
+            Must be in ["loss", "runtime", "model_size"].
+        min_epoch (int):
+            The minimum epoch of the training of each neural networks to be used during the optimization.
+        max_epoch (int):
+            The maximum epoch of the training of each neural networks to be used during the optimization.
+        min_resol (float):
+            The minimum resolution of image data for the training of each neural networks.
+        max_resol (float):
+            The maximum resolution of image data for the training of each neural networks.
+        keep_benchdata (bool):
+            Whether to keep the benchmark data in each instance.
+            When True, serialization will happen in case of parallel optimization.
+
+    References:
+        Title: JAHS-Bench-201: A Foundation For Research On Joint Architecture And Hyperparameter Search
+        Authors: A. Bansal et al.
+        URL: https://openreview.net/forum?id=_HLcjaVlqJ
+
+    NOTE:
+        The data is available at:
+            https://ml.informatik.uni-freiburg.de/research-artifacts/jahs_bench_201/v1.1.0/assembled_surrogates.tar
+    """
     _target_metric: ClassVar[str] = "valid-acc"
     _N_DATASETS: ClassVar[int] = 3
     _MAX_EPOCH: ClassVar[int] = 200

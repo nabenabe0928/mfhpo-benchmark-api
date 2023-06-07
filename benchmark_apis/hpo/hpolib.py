@@ -54,12 +54,35 @@ class HPOLibDatabase:
 
 
 class HPOLib(AbstractBench):
-    """
-    Download the datasets via:
-        $ wget http://ml4aad.org/wp-content/uploads/2019/01/fcnet_tabular_benchmarks.tar.gz
-        $ tar xf fcnet_tabular_benchmarks.tar.gz
+    """The class for HPOlib.
 
-    Use https://github.com/nabenabe0928/hpolib-extractor to extract the pickle file.
+    Args:
+        dataset_id (int):
+            The ID of the dataset.
+        seed (int | None):
+            The random seed to be used.
+        target_metrics (list[str]):
+            The target metrics to return.
+            Must be in ["loss", "runtime", "model_size"].
+        min_epoch (int):
+            The minimum epoch of the training of each neural networks to be used during the optimization.
+        max_epoch (int):
+            The maximum epoch of the training of each neural networks to be used during the optimization.
+        keep_benchdata (bool):
+            Whether to keep the benchmark data in each instance.
+            When True, serialization will happen in case of parallel optimization.
+
+    References:
+        Title: Tabular Benchmarks for Joint Architecture and Hyperparameter Optimization
+        Authors: A. Klein and F. Hutter
+        URL: https://arxiv.org/abs/1905.04970
+
+    NOTE:
+        Download the datasets via:
+            $ wget http://ml4aad.org/wp-content/uploads/2019/01/fcnet_tabular_benchmarks.tar.gz
+            $ tar xf fcnet_tabular_benchmarks.tar.gz
+
+        Use https://github.com/nabenabe0928/hpolib-extractor to extract the pickle file.
     """
 
     _N_DATASETS: ClassVar[int] = 4

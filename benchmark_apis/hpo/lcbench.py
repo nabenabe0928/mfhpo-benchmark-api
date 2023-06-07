@@ -59,7 +59,39 @@ class LCBenchSurrogate:
 
 
 class LCBench(AbstractBench):
-    # https://syncandshare.lrz.de/getlink/fiCMkzqj1bv1LfCUyvZKmLvd/
+    """The class for LCBench.
+
+    Args:
+        dataset_id (int):
+            The ID of the dataset.
+        seed (int | None):
+            The random seed to be used.
+        target_metrics (list[str]):
+            The target metrics to return.
+            Must be in ["loss", "runtime", "model_size"].
+        min_epoch (int):
+            The minimum epoch of the training of each neural networks to be used during the optimization.
+        max_epoch (int):
+            The maximum epoch of the training of each neural networks to be used during the optimization.
+        keep_benchdata (bool):
+            Whether to keep the benchmark data in each instance.
+            When True, serialization will happen in case of parallel optimization.
+
+    References:
+        1. The original benchmark
+        Title: Auto-PyTorch Tabular: Multi-Fidelity MetaLearning for Efficient and Robust AutoDL
+        Authors: L. Zimmer et al.
+        URL: https://arxiv.org/abs/2006.13799/
+
+        2. The proposition of the surrogate model
+        Title: YAHPO Gym -- An Efficient Multi-Objective Multi-Fidelity Benchmark for Hyperparameter Optimization
+        Authors: F. Pfisterer et al.
+        URL: https://arxiv.org/abs/2109.03670/
+
+    NOTE:
+        The data is available at:
+            https://syncandshare.lrz.de/getlink/fiCMkzqj1bv1LfCUyvZKmLvd/
+    """
     _N_DATASETS: ClassVar[int] = 34
     _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k for k in _TARGET_KEYS.__dict__.keys()]
     _MAX_EPOCH: ClassVar[int] = 54
