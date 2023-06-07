@@ -36,7 +36,7 @@ class MFHartmann(MFAbstractFunc):
 
     def __init__(
         self,
-        dim: Literal[3, 6],
+        dim: Literal[3, 6] = 3,
         fidel_dim: int = 1,
         seed: int | None = None,
         bias: float = 0.1,
