@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from enum import Enum
 from typing import ClassVar
 
 import ConfigSpace as CS
@@ -10,17 +11,20 @@ from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME
 from yahpo_gym import benchmark_set, local_config
 
 
-FIDEL_KEY = "epoch"
+class _TargetMetricKeys(Enum):
+    loss: str = "val_balanced_accuracy"
+    runtime: str = "time"
 
 
 class LCBenchSurrogate:
     """Workaround to prevent dask from serializing the objective func"""
 
-    def __init__(self, dataset_id: str, target_metric: str):
+    def __init__(self, dataset_id: str, target_metrics: list[str], fidel_keys: list[str]):
         benchdata_path = os.path.join(DATA_DIR_NAME, "lcbench")
         self._check_benchdata_availability(benchdata_path)
-        self._target_metric = target_metric
         self._dataset_id = dataset_id
+        self._target_metrics = target_metrics[:]
+        self._fidel_keys = fidel_keys[:]
         # active_session=False is necessary for parallel computing.
         self._surrogate = benchmark_set.BenchmarkSet("lcbench", instance=dataset_id, active_session=False)
 
@@ -40,17 +44,25 @@ class LCBenchSurrogate:
     def __call__(self, eval_config: dict[str, int | float], fidel: int) -> dict[str, float]:
         _eval_config: dict[str, int | float | str] = eval_config.copy()  # type: ignore
         _eval_config["OpenML_task_id"] = self._dataset_id
-        _eval_config[FIDEL_KEY] = fidel
+        _eval_config[self._fidel_keys[0]] = fidel
+
         output = self._surrogate.objective_function(_eval_config)[0]
-        return dict(loss=float(1.0 - output[self._target_metric]), runtime=float(output["time"]))
+        results = {_TargetMetricKeys.runtime.name: float(output[_TargetMetricKeys.runtime.value])}
+        loss_key = _TargetMetricKeys.loss.name
+        if loss_key in self._target_metrics:
+            results[loss_key] = float(1.0 - output[_TargetMetricKeys.loss.value])
+
+        return results
 
 
 class LCBench(AbstractBench):
     # https://syncandshare.lrz.de/getlink/fiCMkzqj1bv1LfCUyvZKmLvd/
-    _target_metric: ClassVar[str] = "val_balanced_accuracy"
-    _TRUE_MAX_FIDEL: ClassVar[int] = 52
     _N_DATASETS: ClassVar[int] = 34
-    _DATASET_NAMES: tuple[str, ...] = (
+    _FIDEL_KEYS: ClassVar[list[str]] = ["epoch"]
+    _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k.name for k in _TargetMetricKeys]
+    _MAX_EPOCH: ClassVar[int] = 54
+    _TRUE_MAX_EPOCH: ClassVar[int] = 52
+    _DATASET_NAMES: ClassVar[tuple[str, ...]] = (
         "kddcup09",
         "covertype",
         "amazon-employee-access",
@@ -91,6 +103,9 @@ class LCBench(AbstractBench):
         self,
         dataset_id: int,
         seed: int | None = None,  # surrogate is not stochastic
+        target_metrics: list[str] = [_TargetMetricKeys.loss.name],
+        min_epoch: int = 6,
+        max_epoch: int = 54,
         keep_benchdata: bool = True,
     ):
         dataset_info = (
@@ -130,11 +145,18 @@ class LCBench(AbstractBench):
             ("jungle_chess_2pcs_raw_endgame_complete", "189909"),
         )
         self.dataset_name, self._dataset_id = dataset_info[dataset_id]
+        self._target_metrics = target_metrics[:]
         self._surrogate = self.get_benchdata() if keep_benchdata else None
         self._config_space = self.config_space
+        self._min_epoch, self._max_epoch = min_epoch, max_epoch
+
+        self._validate_target_metrics(target_metrics)
+        self._validate_epochs(min_epoch=min_epoch, max_epoch=max_epoch)
 
     def get_benchdata(self) -> LCBenchSurrogate:
-        return LCBenchSurrogate(dataset_id=self._dataset_id, target_metric=self._target_metric)
+        return LCBenchSurrogate(
+            dataset_id=self._dataset_id, target_metrics=self._target_metrics, fidel_keys=self._FIDEL_KEYS
+        )
 
     def _validate_config(self, eval_config: dict[str, int | float]) -> None:
         EPS = 1e-12
@@ -150,7 +172,7 @@ class LCBench(AbstractBench):
         self,
         eval_config: dict[str, int | float],
         *,
-        fidels: dict[str, int | float] = {FIDEL_KEY: 52},
+        fidels: dict[str, int | float] = {},
         seed: int | None = None,
         benchdata: LCBenchSurrogate | None = None,
     ) -> dict[str, float]:
@@ -159,7 +181,7 @@ class LCBench(AbstractBench):
 
         surrogate = benchdata if self._surrogate is None else self._surrogate
         assert surrogate is not None  # mypy redefinition
-        fidel = int(min(self._TRUE_MAX_FIDEL, fidels[FIDEL_KEY]))
+        fidel = int(fidels.get(self._FIDEL_KEYS[0], min(self._max_epoch, self._TRUE_MAX_EPOCH)))
         self._validate_config(eval_config=eval_config)
         return surrogate(eval_config=eval_config, fidel=fidel)
 
@@ -181,13 +203,13 @@ class LCBench(AbstractBench):
 
     @property
     def min_fidels(self) -> dict[str, int | float]:
-        return {FIDEL_KEY: 6}
+        return {self._FIDEL_KEYS[0]: self._min_epoch}
 
     @property
     def max_fidels(self) -> dict[str, int | float]:
         # in reality, the max_fidel is 52, but make it 54 only for computational convenience.
-        return {FIDEL_KEY: 54}
+        return {self._FIDEL_KEYS[0]: self._max_epoch}
 
     @property
     def fidel_keys(self) -> list[str]:
-        return [FIDEL_KEY]
+        return self._FIDEL_KEYS[:]

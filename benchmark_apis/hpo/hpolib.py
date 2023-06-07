@@ -20,7 +20,7 @@ class RowDataType(TypedDict):
 
 
 class _TargetMetricKeys(Enum):
-    loss: str = "loss"
+    loss: str = "valid_mse"
     runtime: str = "runtime"
     model_size: str = "n_params"
 
@@ -113,11 +113,16 @@ class HPOLib(AbstractBench):
         key = json.dumps({k: self._value_range[k][int(v)] for k, v in eval_config.items()}, sort_keys=True)
 
         row: RowDataType = db[key]
-        output: dict[str, float] = dict(runtime=row["runtime"][idx] * fidel / self.max_fidels[self._FIDEL_KEYS[0]])
-        if _TargetMetricKeys.loss.name in self._target_metrics:
-            output["loss"] = np.log(row["valid_mse"][idx][fidel - 1])
-        if _TargetMetricKeys.model_size.name in self._target_metrics:
-            output["model_size"] = float(row["n_params"][idx])
+        full_runtime = row[_TargetMetricKeys.runtime.value][idx]  # type: ignore
+        output: dict[str, float] = {
+            _TargetMetricKeys.runtime.name: full_runtime * fidel / self.max_fidels[self._FIDEL_KEYS[0]]
+        }
+
+        loss_key, size_key = _TargetMetricKeys.loss.name, _TargetMetricKeys.model_size.name
+        if loss_key in self._target_metrics:
+            output[loss_key] = np.log(row[_TargetMetricKeys.loss.value][idx][fidel - 1])  # type: ignore
+        if size_key in self._target_metrics:
+            output[size_key] = float(row[_TargetMetricKeys.model_size.value][idx])  # type: ignore
 
         return output
 
