@@ -18,13 +18,29 @@ VALUE_RANGES: Final[dict[str, dict[str, list[int | float | str | bool]]]] = json
 
 class AbstractBench(metaclass=ABCMeta):
     _BENCH_TYPE: ClassVar[str] = "HPO"
-    _target_metric: ClassVar[str]
+    _FIDEL_KEYS: ClassVar[list[str]]
+    _TARGET_METRIC_KEYS: ClassVar[list[str]]
+    _N_DATASETS: ClassVar[int]
+    _DATASET_NAMES: ClassVar[tuple[str, ...]]
+    _MAX_EPOCH: ClassVar[int]
     _value_range: dict[str, list[int | float | str | bool]]
     _rng: np.random.RandomState
     dataset_name: str
 
     def reseed(self, seed: int) -> None:
         self._rng = np.random.RandomState(seed)
+
+    def _validate_target_metrics(self, target_metrics: list[str]) -> None:
+        if any(tm not in self._TARGET_METRIC_KEYS for tm in target_metrics):
+            raise ValueError(
+                f"All elements in target_metrics must be in {self._TARGET_METRIC_KEYS}, but got {target_metrics}"
+            )
+
+    def _validate_epochs(self, min_epoch: int, max_epoch: int) -> None:
+        if min_epoch <= 0 or max_epoch > self._MAX_EPOCH:
+            raise ValueError(f"epoch must be in [1, {self._MAX_EPOCH}], but got {min_epoch=} and {max_epoch=}")
+        if min_epoch >= max_epoch:
+            raise ValueError(f"min_epoch < max_epoch must hold, but got {min_epoch=} and {max_epoch=}")
 
     def _fetch_discrete_config_space(self) -> CS.ConfigurationSpace:
         config_space = CS.ConfigurationSpace()
