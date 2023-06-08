@@ -92,6 +92,7 @@ class LCBench(AbstractBench):
         The data is available at:
             https://syncandshare.lrz.de/getlink/fiCMkzqj1bv1LfCUyvZKmLvd/
     """
+
     _N_DATASETS: ClassVar[int] = 34
     _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k for k in _TARGET_KEYS.__dict__.keys()]
     _MAX_EPOCH: ClassVar[int] = 54

@@ -103,6 +103,7 @@ class JAHSBench201(AbstractBench):
         The data is available at:
             https://ml.informatik.uni-freiburg.de/research-artifacts/jahs_bench_201/v1.1.0/assembled_surrogates.tar
     """
+
     _target_metric: ClassVar[str] = "valid-acc"
     _N_DATASETS: ClassVar[int] = 3
     _MAX_EPOCH: ClassVar[int] = 200

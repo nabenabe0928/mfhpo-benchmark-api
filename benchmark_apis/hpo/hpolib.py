@@ -27,7 +27,7 @@ _FIDEL_KEY = "epoch"
 class RowDataType(TypedDict):
     valid_mse: list[dict[int, float]]
     runtime: list[float]
-    n_params: list[int]
+    n_params: int
 
 
 class HPOLibDatabase:
@@ -146,7 +146,8 @@ class HPOLib(AbstractBench):
         if RESULT_KEYS.loss in self._target_metrics:
             output[RESULT_KEYS.loss] = np.log(row[_TARGET_KEYS.loss][idx][fidel - 1])  # type: ignore
         if RESULT_KEYS.model_size in self._target_metrics:
-            output[RESULT_KEYS.model_size] = float(row[_TARGET_KEYS.model_size][idx])  # type: ignore
+            print(row[_TARGET_KEYS.model_size])
+            output[RESULT_KEYS.model_size] = float(row[_TARGET_KEYS.model_size])  # type: ignore
 
         return output
 
