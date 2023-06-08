@@ -146,7 +146,6 @@ class HPOLib(AbstractBench):
         if RESULT_KEYS.loss in self._target_metrics:
             output[RESULT_KEYS.loss] = np.log(row[_TARGET_KEYS.loss][idx][fidel - 1])  # type: ignore
         if RESULT_KEYS.model_size in self._target_metrics:
-            print(row[_TARGET_KEYS.model_size])
             output[RESULT_KEYS.model_size] = float(row[_TARGET_KEYS.model_size])  # type: ignore
 
         return output

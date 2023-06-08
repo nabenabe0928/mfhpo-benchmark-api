@@ -1,4 +1,8 @@
 # For package
+ConfigSpace
+numpy
+jahs-bench
+yahpo-gym
 
 # For local check
 pytest-cov
