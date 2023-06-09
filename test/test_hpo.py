@@ -1,9 +1,13 @@
 import os
 import pytest
+import shutil
 import unittest
 
 from benchmark_apis import HPOLib, JAHSBench201, LCBench
 from benchmark_apis.hpo.abstract_bench import DATA_DIR_NAME
+
+
+DUMMY_DIR_NAME = os.path.join(os.environ["HOME"], "dummy-mfhpo-test")
 
 
 @pytest.mark.parametrize(
@@ -34,12 +38,11 @@ def test_jahs(target_metrics):
 
 
 def test_jahs_not_found():
-    os.path.join(os.environ["HOME"])
-    os.rename(DATA_DIR_NAME, "dummy")
+    shutil.move(DATA_DIR_NAME, DUMMY_DIR_NAME)
     with pytest.raises(FileNotFoundError):
         JAHSBench201(dataset_id=0)
 
-    os.rename("dummy", DATA_DIR_NAME)
+    shutil.move(DUMMY_DIR_NAME, DATA_DIR_NAME)
 
 
 def test_jahs_invalid_input():
@@ -84,12 +87,11 @@ def test_lcbench(target_metrics):
 
 
 def test_lcbench_not_found():
-    os.path.join(os.environ["HOME"])
-    os.rename(DATA_DIR_NAME, "dummy")
+    shutil.move(DATA_DIR_NAME, DUMMY_DIR_NAME)
     with pytest.raises(FileNotFoundError):
         LCBench(dataset_id=0)
 
-    os.rename("dummy", DATA_DIR_NAME)
+    shutil.move(DUMMY_DIR_NAME, DATA_DIR_NAME)
 
 
 def test_lcbench_invalid_input():
@@ -132,12 +134,11 @@ def test_hpolib(target_metrics):
 
 
 def test_hpolib_not_found():
-    os.path.join(os.environ["HOME"])
-    os.rename(DATA_DIR_NAME, "dummy")
+    shutil.move(DATA_DIR_NAME, DUMMY_DIR_NAME)
     with pytest.raises(FileNotFoundError):
         HPOLib(dataset_id=0)
 
-    os.rename("dummy", DATA_DIR_NAME)
+    shutil.move(DUMMY_DIR_NAME, DATA_DIR_NAME)
 
 
 def test_hpolib_invalid_input():

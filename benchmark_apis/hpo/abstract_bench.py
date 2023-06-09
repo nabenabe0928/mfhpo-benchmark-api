@@ -16,18 +16,36 @@ class _ResultKeys:
     loss: str = "loss"
     runtime: str = "runtime"
     model_size: str = "model_size"
+    f1: str = "f1"
+    precision: str = "precision"
 
 
 class ResultType(TypedDict):
     runtime: float
     loss: Optional[float]
     model_size: Optional[float]
+    f1: Optional[float]
+    precision: Optional[float]
 
 
 RESULT_KEYS = _ResultKeys()
 DATA_DIR_NAME: Final[str] = os.path.join(os.environ["HOME"], "hpo_benchmarks")
 SEARCH_SPACE_PATH: Final[str] = "benchmark_apis/hpo/discrete_search_spaces.json"
 VALUE_RANGES: Final[dict[str, dict[str, list[int | float | str | bool]]]] = json.load(open(SEARCH_SPACE_PATH))
+
+
+class AbstractHPOData(metaclass=ABCMeta):
+    _data_url: str
+
+    def _check_benchdata_availability(self, benchdata_path: str, additional_info: str) -> None:
+        if not os.path.exists(benchdata_path):
+            raise FileNotFoundError(
+                f"Could not find the dataset at {benchdata_path}.\n"
+                f"Download the dataset and place the file at {benchdata_path}.\n"
+                "You can download the dataset via:\n"
+                f"\t$ wget {self._data_url}\n\n"
+                f"{additional_info}"
+            )
 
 
 class AbstractBench(metaclass=ABCMeta):

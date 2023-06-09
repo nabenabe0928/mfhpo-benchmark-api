@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import os
 import pickle
 from dataclasses import dataclass
@@ -8,7 +7,14 @@ from typing import ClassVar, TypedDict
 
 import ConfigSpace as CS
 
-from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, RESULT_KEYS, ResultType, VALUE_RANGES
+from benchmark_apis.hpo.abstract_bench import (
+    AbstractBench,
+    AbstractHPOData,
+    DATA_DIR_NAME,
+    RESULT_KEYS,
+    ResultType,
+    VALUE_RANGES,
+)
 
 import numpy as np
 
@@ -22,6 +28,17 @@ class _TargetMetricKeys:
 
 _TARGET_KEYS = _TargetMetricKeys()
 _FIDEL_KEY = "epoch"
+_KEY_ORDER = [
+    "activation_fn_1",
+    "activation_fn_2",
+    "batch_size",
+    "dropout_1",
+    "dropout_2",
+    "init_lr",
+    "lr_schedule",
+    "n_units_1",
+    "n_units_2",
+]
 
 
 class RowDataType(TypedDict):
@@ -30,24 +47,19 @@ class RowDataType(TypedDict):
     n_params: int
 
 
-class HPOLibDatabase:
+class HPOLibDatabase(AbstractHPOData):
     """Workaround to prevent dask from serializing the objective func"""
+
+    _data_url = "http://ml4aad.org/wp-content/uploads/2019/01/fcnet_tabular_benchmarks.tar.gz"
 
     def __init__(self, dataset_name: str):
         benchdata_path = os.path.join(DATA_DIR_NAME, "hpolib", f"{dataset_name}.pkl")
-        self._check_benchdata_availability(benchdata_path)
+        additional_info = (
+            "\t$ tar xf fcnet_tabular_benchmarks.tar.gz\n\n"
+            "Then extract the pkl file using https://github.com/nabenabe0928/hpolib-extractor/."
+        )
+        self._check_benchdata_availability(benchdata_path, additional_info=additional_info)
         self._db = pickle.load(open(benchdata_path, "rb"))
-
-    def _check_benchdata_availability(self, benchdata_path: str) -> None:
-        if not os.path.exists(benchdata_path):
-            raise FileNotFoundError(
-                f"Could not find the dataset at {benchdata_path}.\n"
-                f"Download the dataset and place the file at {benchdata_path}.\n"
-                "You can download the dataset via:\n"
-                "\t$ wget http://ml4aad.org/wp-content/uploads/2019/01/fcnet_tabular_benchmarks.tar.gz\n"
-                "\t$ tar xf fcnet_tabular_benchmarks.tar.gz\n\n"
-                "Then extract the pkl file using https://github.com/nabenabe0928/hpolib-extractor/."
-            )
 
     def __getitem__(self, key: str) -> RowDataType:
         return self._db[key]
@@ -137,9 +149,9 @@ class HPOLib(AbstractBench):
         assert db is not None  # mypy redefinition
         fidel = int(fidels.get(_FIDEL_KEY, self._max_epoch))
         idx = seed % 4 if seed is not None else self._rng.randint(4)
-        key = json.dumps({k: self._value_range[k][int(v)] for k, v in eval_config.items()}, sort_keys=True)
+        config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])
 
-        row: RowDataType = db[key]
+        row: RowDataType = db[config_id]
         full_runtime = row[_TARGET_KEYS.runtime][idx]  # type: ignore
         output: ResultType = {RESULT_KEYS.runtime: full_runtime * fidel / self.max_fidels[_FIDEL_KEY]}  # type: ignore
 

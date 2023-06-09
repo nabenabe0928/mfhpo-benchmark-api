@@ -6,7 +6,14 @@ from typing import ClassVar
 
 import ConfigSpace as CS
 
-from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, RESULT_KEYS, ResultType, VALUE_RANGES
+from benchmark_apis.hpo.abstract_bench import (
+    AbstractBench,
+    AbstractHPOData,
+    DATA_DIR_NAME,
+    RESULT_KEYS,
+    ResultType,
+    VALUE_RANGES,
+)
 
 try:
     import jahs_bench
@@ -31,28 +38,20 @@ _FIDEL_KEYS = _FidelKeys()
 _TARGET_KEYS = _TargetMetricKeys()
 
 
-class JAHSBenchSurrogate:
+class JAHSBenchSurrogate(AbstractHPOData):
     """Workaround to prevent dask from serializing the objective func"""
 
+    _data_url = (
+        "https://ml.informatik.uni-freiburg.de/research-artifacts/jahs_bench_201/v1.1.0/assembled_surrogates.tar"
+    )
+
     def __init__(self, data_dir: str, dataset_name: str, target_metrics: list[str]):
-        self._check_benchdata_availability(benchdata_path=data_dir)
+        additional_info = f"Then untar the file in {data_dir}."
+        self._check_benchdata_availability(data_dir, additional_info=additional_info)
         self._target_metrics = target_metrics[:]
         _metrics = [getattr(_TARGET_KEYS, tm) for tm in self._target_metrics]
         metrics = list(set(_metrics + [_TARGET_KEYS.runtime]))
         self._surrogate = jahs_bench.Benchmark(task=dataset_name, download=False, save_dir=data_dir, metrics=metrics)
-
-    def _check_benchdata_availability(self, benchdata_path: str) -> None:
-        data_url = (
-            "https://ml.informatik.uni-freiburg.de/research-artifacts/jahs_bench_201/v1.1.0/assembled_surrogates.tar"
-        )
-        if not os.path.exists(benchdata_path):
-            raise FileNotFoundError(
-                f"Could not find the dataset at {benchdata_path}.\n"
-                f"Download the dataset and place the file at {benchdata_path}.\n"
-                "You can download the dataset via:\n"
-                f"\t$ wget {data_url}\n\n"
-                f"Then untar the file in {benchdata_path}."
-            )
 
     def __call__(self, eval_config: dict[str, int | float | str | bool], fidels: dict[str, int | float]) -> ResultType:
         _fidels = fidels.copy()
