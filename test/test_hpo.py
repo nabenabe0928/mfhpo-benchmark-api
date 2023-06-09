@@ -8,7 +8,7 @@ from benchmark_apis.hpo.abstract_bench import DATA_DIR_NAME
 
 
 DUMMY_DIR_NAME = os.path.join(os.environ["HOME"], "dummy-mfhpo-test")
-IS_LOCAL = os.uname().nodename == "EB-B9400CBA"
+IS_LOCAL = eval(os.environ.get("MFHPO_BENCH_TEST", "False"))
 
 
 @unittest.skipIf(not IS_LOCAL, "Data is too heavy to prepare on the GitHub server")
