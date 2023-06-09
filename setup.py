@@ -8,7 +8,7 @@ with open("requirements.txt", "r") as f:
 
 
 setuptools.setup(
-    name="repo-template",
+    name="mfhpo-benchmark-api",
     version="0.0.1",
     author="nabenabe0928",
     author_email="shuhei.watanabe.utokyo@gmail.com",
