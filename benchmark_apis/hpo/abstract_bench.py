@@ -52,7 +52,6 @@ class AbstractBench(metaclass=ABCMeta):
     _BENCH_TYPE: ClassVar[str] = "HPO"
     _TARGET_METRIC_KEYS: ClassVar[list[str]]
     _N_DATASETS: ClassVar[int]
-    _DATASET_NAMES: ClassVar[tuple[str, ...]]
     _MAX_EPOCH: ClassVar[int]
     _min_epoch: int
     _max_epoch: int

@@ -92,42 +92,6 @@ class LCBench(AbstractBench):
     _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k for k in _TARGET_KEYS.__dict__.keys()]
     _MAX_EPOCH: ClassVar[int] = 54
     _TRUE_MAX_EPOCH: ClassVar[int] = 52
-    _DATASET_NAMES: ClassVar[tuple[str, ...]] = (
-        "kddcup09",
-        "covertype",
-        "amazon-employee-access",
-        "adult",
-        "nomao",
-        "bank-marketing",
-        "shuttle",
-        "australian",
-        "kr-vs-kp",
-        "mfeat-factors",
-        "credit-g",
-        "vehicle",
-        "kc1",
-        "blood-transfusion-service-center",
-        "cnae-9",
-        "phoneme",
-        "higgs",
-        "connect-4",
-        "helena",
-        "jannis",
-        "volkert",
-        "mini-boo-ne",
-        "aps-failure",
-        "christine",
-        "fabert",
-        "airlines",
-        "jasmine",
-        "sylvine",
-        "albert",
-        "dionis",
-        "car",
-        "segment",
-        "fashion-mnist",
-        "jungle-chess-2pcs-raw-endgame-complete",
-    )
 
     def __init__(
         self,

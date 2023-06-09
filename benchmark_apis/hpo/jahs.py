@@ -107,7 +107,6 @@ class JAHSBench201(AbstractBench):
     _N_DATASETS: ClassVar[int] = 3
     _MAX_EPOCH: ClassVar[int] = 200
     _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k for k in _TARGET_KEYS.__dict__.keys()]
-    _DATASET_NAMES: ClassVar[tuple[str, ...]] = ("cifar10", "fashion-mnist", "colorectal-histology")
 
     def __init__(
         self,

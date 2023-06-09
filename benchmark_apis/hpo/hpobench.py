@@ -21,42 +21,33 @@ import numpy as np
 
 @dataclass(frozen=True)
 class _TargetMetricKeys:
-    loss: str = "valid_mse"
+    loss: str = "bal_acc"
     runtime: str = "runtime"
-    model_size: str = "n_params"
+    precision: str = "precision"
+    f1: str = "f1"
 
 
 _TARGET_KEYS = _TargetMetricKeys()
 _FIDEL_KEY = "epoch"
-_KEY_ORDER = [
-    "activation_fn_1",
-    "activation_fn_2",
-    "batch_size",
-    "dropout_1",
-    "dropout_2",
-    "init_lr",
-    "lr_schedule",
-    "n_units_1",
-    "n_units_2",
-]
+_KEY_ORDER = ["alpha", "batch_size", "depth", "learning_rate_init", "width"]
 
 
 class RowDataType(TypedDict):
-    valid_mse: list[dict[int, float]]
-    runtime: list[float]
-    n_params: int
+    loss: list[dict[int, float]]
+    runtime: list[dict[int, float]]
+    precision: list[dict[int, float]]
+    f1: list[dict[int, float]]
 
 
-class HPOLibDatabase(AbstractHPOData):
+class HPOBenchDatabase(AbstractHPOData):
     """Workaround to prevent dask from serializing the objective func"""
 
-    _data_url = "http://ml4aad.org/wp-content/uploads/2019/01/fcnet_tabular_benchmarks.tar.gz"
+    _data_url = "https://ndownloader.figshare.com/files/30379005/"
 
     def __init__(self, dataset_name: str):
-        benchdata_path = os.path.join(DATA_DIR_NAME, "hpolib", f"{dataset_name}.pkl")
+        benchdata_path = os.path.join(DATA_DIR_NAME, "hpobench", f"{dataset_name}.pkl")
         additional_info = (
-            "\t$ tar xf fcnet_tabular_benchmarks.tar.gz\n\n"
-            "Then extract the pkl file using https://github.com/nabenabe0928/hpolib-extractor/."
+            "\t$ unzip nn.zip\n\n" "Then extract the pkl file using https://github.com/nabenabe0928/hpolib-extractor/."
         )
         self._check_benchdata_availability(benchdata_path, additional_info=additional_info)
         self._db = pickle.load(open(benchdata_path, "rb"))
@@ -73,9 +64,9 @@ class HPOLib(AbstractBench):
             The ID of the dataset.
         seed (int | None):
             The random seed to be used.
-        target_metrics (list[Literal["loss", "runtime", "model_size"]]):
+        target_metrics (list[Literal["loss", "runtime", "f1", "precision"]]):
             The target metrics to return.
-            Must be in ["loss", "runtime", "model_size"].
+            Must be in ["loss", "runtime", "f1", "precision"].
         min_epoch (int):
             The minimum epoch of the training of each neural networks to be used during the optimization.
         max_epoch (int):
@@ -85,49 +76,54 @@ class HPOLib(AbstractBench):
             When True, serialization will happen in case of parallel optimization.
 
     References:
-        Title: Tabular Benchmarks for Joint Architecture and Hyperparameter Optimization
-        Authors: A. Klein and F. Hutter
-        URL: https://arxiv.org/abs/1905.04970
+        Title: HPOBench: A Collection of Reproducible Multi-Fidelity Benchmark Problems for HPO
+        Authors: K. Eggensperger et al.
+        URL: https://arxiv.org/abs/2109.06716
 
     NOTE:
         Download the datasets via:
-            $ wget http://ml4aad.org/wp-content/uploads/2019/01/fcnet_tabular_benchmarks.tar.gz
-            $ tar xf fcnet_tabular_benchmarks.tar.gz
+            $ wget https://ndownloader.figshare.com/files/30379005/
+            $ unzip nn.zip
 
         Use https://github.com/nabenabe0928/hpolib-extractor to extract the pickle file.
     """
 
-    _N_DATASETS: ClassVar[int] = 4
-    _N_SEEDS: ClassVar[int] = 4
-    _MAX_EPOCH: ClassVar[int] = 100
+    _N_DATASETS: ClassVar[int] = 8
+    _N_SEEDS: ClassVar[int] = 5
+    _MAX_EPOCH: ClassVar[int] = 243
+    _BUDGETS: ClassVar[list[int]] = [3, 9, 27, 81, 243]
     _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k for k in _TARGET_KEYS.__dict__.keys()]
 
     def __init__(
         self,
         dataset_id: int,
         seed: int | None = None,
-        target_metrics: list[Literal["loss", "runtime", "model_size"]] = [RESULT_KEYS.loss],  # type: ignore
-        min_epoch: int = 11,
-        max_epoch: int = 100,
+        target_metrics: list[Literal["loss", "runtime", "f1", "precision"]] = [RESULT_KEYS.loss],
+        min_epoch: int = 27,
+        max_epoch: int = 243,
         keep_benchdata: bool = True,
     ):
         self.dataset_name = [
-            "slice_localization",
-            "protein_structure",
-            "naval_propulsion",
-            "parkinsons_telemonitoring",
+            "australian",
+            "blood_transfusion",
+            "car",
+            "credit_g",
+            "kc1",
+            "phoneme",
+            "segment",
+            "vehicle",
         ][dataset_id]
         self._db = self.get_benchdata() if keep_benchdata else None
         self._rng = np.random.RandomState(seed)
-        self._value_range = VALUE_RANGES["hpolib"]
+        self._value_range = VALUE_RANGES["hpobench"]
         self._min_epoch, self._max_epoch = min_epoch, max_epoch
-        self._target_metrics = target_metrics[:]  # type: ignore
+        self._target_metrics = target_metrics[:]
 
         self._validate_target_metrics()
         self._validate_epochs()
 
-    def get_benchdata(self) -> HPOLibDatabase:
-        return HPOLibDatabase(self.dataset_name)
+    def get_benchdata(self) -> HPOBenchDatabase:
+        return HPOBenchDatabase(self.dataset_name)
 
     def __call__(
         self,
@@ -135,25 +131,29 @@ class HPOLib(AbstractBench):
         *,
         fidels: dict[str, int] = {},
         seed: int | None = None,
-        benchdata: HPOLibDatabase | None = None,
+        benchdata: HPOBenchDatabase | None = None,
     ) -> ResultType:
+        fidel = int(fidels.get(_FIDEL_KEY, self._max_epoch))
         if benchdata is None and self._db is None:
             raise ValueError("data must be provided when `keep_benchdata` is False")
+        if fidel not in self._BUDGETS:
+            raise ValueError(f"fidel for {self.__class__.__name__} must be in {self._BUDGETS}, but got {fidel}")
 
         db = benchdata if self._db is None else self._db
         assert db is not None  # mypy redefinition
-        fidel = int(fidels.get(_FIDEL_KEY, self._max_epoch))
         idx = seed % self._N_SEEDS if seed is not None else self._rng.randint(self._N_SEEDS)
         config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])
 
         row: RowDataType = db[config_id]
-        full_runtime = row[_TARGET_KEYS.runtime][idx]  # type: ignore
-        output: ResultType = {RESULT_KEYS.runtime: full_runtime * fidel / self.max_fidels[_FIDEL_KEY]}  # type: ignore
+        runtime = row[_TARGET_KEYS.runtime][idx][fidel]  # type: ignore
+        output: ResultType = {RESULT_KEYS.runtime: runtime}  # type: ignore
 
         if RESULT_KEYS.loss in self._target_metrics:
-            output[RESULT_KEYS.loss] = np.log(row[_TARGET_KEYS.loss][idx][fidel])  # type: ignore
-        if RESULT_KEYS.model_size in self._target_metrics:
-            output[RESULT_KEYS.model_size] = float(row[_TARGET_KEYS.model_size])  # type: ignore
+            output[RESULT_KEYS.loss] = 1.0 - row[_TARGET_KEYS.loss][idx][fidel]  # type: ignore
+        if RESULT_KEYS.f1 in self._target_metrics:
+            output[RESULT_KEYS.f1] = float(row[_TARGET_KEYS.f1][idx][fidel])  # type: ignore
+        if RESULT_KEYS.precision in self._target_metrics:
+            output[RESULT_KEYS.precision] = float(row[_TARGET_KEYS.precision][idx][fidel])  # type: ignore
 
         return output
 
