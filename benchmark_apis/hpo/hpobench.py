@@ -56,7 +56,7 @@ class HPOBenchDatabase(AbstractHPOData):
         return self._db[key]
 
 
-class HPOLib(AbstractBench):
+class HPOBench(AbstractBench):
     """The class for HPOlib.
 
     Args:
@@ -98,7 +98,7 @@ class HPOLib(AbstractBench):
         self,
         dataset_id: int,
         seed: int | None = None,
-        target_metrics: list[Literal["loss", "runtime", "f1", "precision"]] = [RESULT_KEYS.loss],
+        target_metrics: list[Literal["loss", "runtime", "f1", "precision"]] = [RESULT_KEYS.loss],  # type: ignore
         min_epoch: int = 27,
         max_epoch: int = 243,
         keep_benchdata: bool = True,
@@ -117,7 +117,7 @@ class HPOLib(AbstractBench):
         self._rng = np.random.RandomState(seed)
         self._value_range = VALUE_RANGES["hpobench"]
         self._min_epoch, self._max_epoch = min_epoch, max_epoch
-        self._target_metrics = target_metrics[:]
+        self._target_metrics = target_metrics[:]  # type: ignore
 
         self._validate_target_metrics()
         self._validate_epochs()
@@ -134,10 +134,10 @@ class HPOLib(AbstractBench):
         benchdata: HPOBenchDatabase | None = None,
     ) -> ResultType:
         fidel = int(fidels.get(_FIDEL_KEY, self._max_epoch))
-        if benchdata is None and self._db is None:
-            raise ValueError("data must be provided when `keep_benchdata` is False")
         if fidel not in self._BUDGETS:
             raise ValueError(f"fidel for {self.__class__.__name__} must be in {self._BUDGETS}, but got {fidel}")
+        if benchdata is None and self._db is None:
+            raise ValueError("data must be provided when `keep_benchdata` is False")
 
         db = benchdata if self._db is None else self._db
         assert db is not None  # mypy redefinition

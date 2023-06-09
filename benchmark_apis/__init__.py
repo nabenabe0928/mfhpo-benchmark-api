@@ -1,3 +1,4 @@
+from benchmark_apis.hpo.hpobench import HPOBench
 from benchmark_apis.hpo.hpolib import HPOLib
 from benchmark_apis.hpo.jahs import JAHSBench201
 from benchmark_apis.hpo.lcbench import LCBench
@@ -13,4 +14,4 @@ __author_email__ = "shuhei.watanabe.utokyo@gmail.com"
 __url__ = "https://github.com/nabenabe0928/mfhpo-benchmark-api/"
 
 
-__all__ = ["HPOLib", "JAHSBench201", "LCBench", "MFBranin", "MFHartmann"]
+__all__ = ["HPOBench", "HPOLib", "JAHSBench201", "LCBench", "MFBranin", "MFHartmann"]
