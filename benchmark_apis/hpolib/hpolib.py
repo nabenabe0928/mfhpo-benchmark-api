@@ -33,6 +33,7 @@ _KEY_ORDER = [
     "n_units_1",
     "n_units_2",
 ]
+_DATA_DIR = os.path.join(DATA_DIR_NAME, "hpolib")
 
 
 class RowDataType(TypedDict):
@@ -45,15 +46,24 @@ class HPOLibDatabase(AbstractHPOData):
     """Workaround to prevent dask from serializing the objective func"""
 
     _data_url = "http://ml4aad.org/wp-content/uploads/2019/01/fcnet_tabular_benchmarks.tar.gz"
+    _data_dir = _DATA_DIR
 
     def __init__(self, dataset_name: str):
-        benchdata_path = os.path.join(DATA_DIR_NAME, "hpolib", f"{dataset_name}.pkl")
-        additional_info = (
-            "\t$ tar xf fcnet_tabular_benchmarks.tar.gz\n\n"
-            "Then extract the pkl file using https://github.com/nabenabe0928/hpolib-extractor/."
+        self._benchdata_path = os.path.join(self._data_dir, f"{dataset_name}.pkl")
+        self._check_benchdata_availability()
+        self._db = pickle.load(open(self._benchdata_path, "rb"))
+
+    @property
+    def install_instruction(self) -> str:
+        return (
+            f"\t$ cd {self._data_dir}\n"
+            f"\t$ wget {self._data_url}\n"
+            "\t$ tar xf fcnet_tabular_benchmarks.tar.gz\n"
+            "\t$ mv fcnet_tabular_benchmarks/*.hdf5 .\n"
+            "\t$ rm -r fcnet_tabular_benchmarks/\n\n"
+            "Then extract the pkl file using https://github.com/nabenabe0928/hpolib-extractor/.\n"
+            f"You should get `{self._benchdata_path}` in the end."
         )
-        self._check_benchdata_availability(benchdata_path, additional_info=additional_info)
-        self._db = pickle.load(open(benchdata_path, "rb"))
 
     def __getitem__(self, key: str) -> RowDataType:
         return self._db[key]

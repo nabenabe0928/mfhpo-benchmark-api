@@ -53,7 +53,7 @@
             512
         ]
     },
-    "jahs-bench": {
+    "jahs": {
         "Activation": [
             "ReLU",
             "Hardswish",

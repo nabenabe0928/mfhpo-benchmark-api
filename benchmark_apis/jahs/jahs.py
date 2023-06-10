@@ -30,6 +30,7 @@ class _FidelKeys:
 
 _FIDEL_KEYS = _FidelKeys()
 _TARGET_KEYS = _TargetMetricKeys()
+_DATA_DIR = os.path.join(DATA_DIR_NAME, "jahs")
 
 
 class JAHSBenchSurrogate(AbstractHPOData):
@@ -38,14 +39,22 @@ class JAHSBenchSurrogate(AbstractHPOData):
     _data_url = (
         "https://ml.informatik.uni-freiburg.de/research-artifacts/jahs_bench_201/v1.1.0/assembled_surrogates.tar"
     )
+    _data_dir = _DATA_DIR
 
-    def __init__(self, data_dir: str, dataset_name: str, target_metrics: list[str]):
-        additional_info = f"Then untar the file in {data_dir}."
-        self._check_benchdata_availability(data_dir, additional_info=additional_info)
+    def __init__(self, dataset_name: str, target_metrics: list[str]):
+        self._check_benchdata_availability()
         self._target_metrics = target_metrics[:]
         _metrics = [getattr(_TARGET_KEYS, tm) for tm in self._target_metrics]
         metrics = list(set(_metrics + [_TARGET_KEYS.runtime]))
-        self._surrogate = jahs_bench.Benchmark(task=dataset_name, download=False, save_dir=data_dir, metrics=metrics)
+        self._surrogate = jahs_bench.Benchmark(task=dataset_name, download=False, save_dir=_DATA_DIR, metrics=metrics)
+
+    @property
+    def install_instruction(self) -> str:
+        return (
+            f"$ cd {self._data_dir}\n"
+            f"$ wget {self._data_url}\n\n"
+            f"Then untar `assembled_surrogates.tar` in {self._data_dir}."
+        )
 
     def __call__(self, eval_config: dict[str, int | float | str | bool], fidels: dict[str, int | float]) -> ResultType:
         _fidels = fidels.copy()
@@ -114,8 +123,7 @@ class JAHSBench201(AbstractBench):
         keep_benchdata: bool = True,
     ):
         self.dataset_name = ["cifar10", "fashion_mnist", "colorectal_histology"][dataset_id]
-        self._data_dir = os.path.join(DATA_DIR_NAME, "jahs_bench_data")
-        self._value_range = VALUE_RANGES["jahs-bench"]
+        self._value_range = VALUE_RANGES["jahs"]
         self._target_metrics = target_metrics[:]
         self._min_epoch, self._max_epoch = min_epoch, max_epoch
         self._min_resol, self._max_resol = min_resol, max_resol
@@ -133,9 +141,7 @@ class JAHSBench201(AbstractBench):
             raise ValueError(f"min_resol < max_resol must hold, but got {min_resol=} and {max_resol=}")
 
     def get_benchdata(self) -> JAHSBenchSurrogate:
-        return JAHSBenchSurrogate(
-            data_dir=self._data_dir, dataset_name=self.dataset_name, target_metrics=self._target_metrics
-        )
+        return JAHSBenchSurrogate(dataset_name=self.dataset_name, target_metrics=self._target_metrics)
 
     def __call__(  # type: ignore[override]
         self,

@@ -23,24 +23,31 @@ class _TargetMetricKeys:
 
 _TARGET_KEYS = _TargetMetricKeys()
 _FIDEL_KEY = "epoch"
+_DATA_DIR = os.path.join(DATA_DIR_NAME, "lcbench")
 
 
 class LCBenchSurrogate(AbstractHPOData):
     """Workaround to prevent dask from serializing the objective func"""
 
     _data_url = "https://syncandshare.lrz.de/getlink/fiCMkzqj1bv1LfCUyvZKmLvd/"
+    _data_dir = _DATA_DIR
 
     def __init__(self, dataset_id: str, target_metrics: list[str]):
-        benchdata_path = os.path.join(DATA_DIR_NAME, "lcbench")
-        additional_info = f"Then unzip the file in {DATA_DIR_NAME}."
-        self._check_benchdata_availability(benchdata_path, additional_info=additional_info)
+        self._check_benchdata_availability()
         self._dataset_id = dataset_id
         self._target_metrics = target_metrics[:]
         # active_session=False is necessary for parallel computing.
         self._surrogate = benchmark_set.BenchmarkSet("lcbench", instance=dataset_id, active_session=False)
 
-    def _check_benchdata_availability(self, benchdata_path: str, additional_info: str) -> None:
-        super()._check_benchdata_availability(benchdata_path=benchdata_path, additional_info=additional_info)
+    @property
+    def install_instruction(self) -> str:
+        return (
+            f"\tAccess to {self._data_url} and download `lcbench.zip` from the website.\n\n"
+            f"After that, please unzip `lcbench.zip` in {self._data_dir}."
+        )
+
+    def _check_benchdata_availability(self) -> None:
+        super()._check_benchdata_availability()
         local_config.init_config()
         local_config.set_data_path(DATA_DIR_NAME)
 

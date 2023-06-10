@@ -40,16 +40,25 @@ RESULT_KEYS = _ResultKeys()
 
 class AbstractHPOData(metaclass=ABCMeta):
     _data_url: str
+    _data_dir: str
 
-    def _check_benchdata_availability(self, benchdata_path: str, additional_info: str) -> None:
-        if not os.path.exists(benchdata_path):
-            raise FileNotFoundError(
-                f"Could not find the dataset at {benchdata_path}.\n"
-                f"Download the dataset and place the file at {benchdata_path}.\n"
-                "You can download the dataset via:\n"
-                f"\t$ wget {self._data_url}\n\n"
-                f"{additional_info}"
-            )
+    @property
+    def full_install_instruction(self) -> str:
+        return (
+            f"Could not find the dataset at {self._data_dir}.\n"
+            f"Download the dataset and place the file at {self._data_dir}.\n"
+            "You can download the dataset via:\n"
+            f"{self.install_instruction}"
+        )
+
+    @property
+    @abstractmethod
+    def install_instruction(self) -> str:
+        raise NotImplementedError
+
+    def _check_benchdata_availability(self) -> None:
+        if not os.path.exists(self._data_dir):
+            raise FileNotFoundError(self.full_install_instruction)
 
 
 class AbstractInterface(metaclass=ABCMeta):
