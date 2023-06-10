@@ -6,7 +6,7 @@ from typing import ClassVar
 
 import ConfigSpace as CS
 
-from benchmark_apis.hpo.abstract_bench import (
+from benchmark_apis.abstract_bench import (
     AbstractBench,
     AbstractHPOData,
     DATA_DIR_NAME,

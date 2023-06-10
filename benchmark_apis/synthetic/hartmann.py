@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import ClassVar, Literal
 
-from benchmark_apis.synthetic.abstract_func import MFAbstractFunc
+from benchmark_apis.abstract_func import MFAbstractFunc
 
 import numpy as np
 

@@ -4,7 +4,7 @@ import shutil
 import unittest
 
 from benchmark_apis import HPOBench, HPOLib, JAHSBench201, LCBench
-from benchmark_apis.hpo.abstract_bench import DATA_DIR_NAME
+from benchmark_apis.abstract_bench import DATA_DIR_NAME
 
 
 DUMMY_DIR_NAME = os.path.join(os.environ["HOME"], "dummy-mfhpo-test")

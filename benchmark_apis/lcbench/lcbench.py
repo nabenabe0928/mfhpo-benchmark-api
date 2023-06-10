@@ -6,7 +6,7 @@ from typing import ClassVar
 
 import ConfigSpace as CS
 
-from benchmark_apis.hpo.abstract_bench import AbstractBench, AbstractHPOData, DATA_DIR_NAME, RESULT_KEYS, ResultType
+from benchmark_apis.abstract_bench import AbstractBench, AbstractHPOData, DATA_DIR_NAME, RESULT_KEYS, ResultType
 
 from yahpo_gym import benchmark_set, local_config
 

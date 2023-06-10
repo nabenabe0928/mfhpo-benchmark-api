@@ -1,7 +1,7 @@
-from benchmark_apis.hpo.hpobench import HPOBench
-from benchmark_apis.hpo.hpolib import HPOLib
-from benchmark_apis.hpo.jahs import JAHSBench201
-from benchmark_apis.hpo.lcbench import LCBench
+from benchmark_apis.hpobench.hpobench import HPOBench
+from benchmark_apis.hpolib.hpolib import HPOLib
+from benchmark_apis.jahs.jahs import JAHSBench201
+from benchmark_apis.lcbench.lcbench import LCBench
 from benchmark_apis.synthetic.branin import MFBranin
 from benchmark_apis.synthetic.hartmann import MFHartmann
 
