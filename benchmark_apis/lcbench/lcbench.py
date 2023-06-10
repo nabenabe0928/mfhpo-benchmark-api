@@ -185,7 +185,7 @@ class LCBench(AbstractBench):
 
         surrogate = benchdata if self._surrogate is None else self._surrogate
         assert surrogate is not None  # mypy redefinition
-        fidel = int(fidels.get(_FIDEL_KEY, min(self._max_epoch, self._TRUE_MAX_EPOCH)))
+        fidel = int(min(self._TRUE_MAX_EPOCH, fidels.get(_FIDEL_KEY, self._max_epoch)))
         self._validate_config(eval_config=eval_config)
         return surrogate(eval_config=eval_config, fidel=fidel)
 
