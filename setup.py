@@ -26,7 +26,7 @@ setuptools.setup(
     name=pkg_name,
     python_requires=">=3.8",
     platforms=["Linux", "Darwin"],
-    version="1.1.1",
+    version="1.2.0",
     author=author,
     author_email="shuhei.watanabe.utokyo@gmail.com",
     url=f"https://github.com/{author}/{pkg_name}",
