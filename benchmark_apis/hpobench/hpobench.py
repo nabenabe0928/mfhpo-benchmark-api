@@ -7,14 +7,8 @@ from typing import ClassVar, Literal, TypedDict
 
 import ConfigSpace as CS
 
-from benchmark_apis.abstract_bench import (
-    AbstractBench,
-    AbstractHPOData,
-    DATA_DIR_NAME,
-    RESULT_KEYS,
-    ResultType,
-    VALUE_RANGES,
-)
+from benchmark_apis.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES
+from benchmark_apis.abstract_interface import AbstractHPOData, RESULT_KEYS, ResultType
 
 import numpy as np
 
@@ -125,7 +119,7 @@ class HPOBench(AbstractBench):
     def get_benchdata(self) -> HPOBenchDatabase:
         return HPOBenchDatabase(self.dataset_name)
 
-    def __call__(
+    def __call__(  # type: ignore[override]
         self,
         eval_config: dict[str, int | str],
         *,
@@ -162,11 +156,11 @@ class HPOBench(AbstractBench):
         return self._fetch_discrete_config_space()
 
     @property
-    def min_fidels(self) -> dict[str, int | float]:
+    def min_fidels(self) -> dict[str, int]:  # type: ignore[override]
         return {_FIDEL_KEY: self._min_epoch}
 
     @property
-    def max_fidels(self) -> dict[str, int | float]:
+    def max_fidels(self) -> dict[str, int]:  # type: ignore[override]
         return {_FIDEL_KEY: self._max_epoch}
 
     @property

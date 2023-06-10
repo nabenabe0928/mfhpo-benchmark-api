@@ -6,7 +6,8 @@ from typing import ClassVar
 
 import ConfigSpace as CS
 
-from benchmark_apis.abstract_bench import AbstractBench, AbstractHPOData, DATA_DIR_NAME, RESULT_KEYS, ResultType
+from benchmark_apis.abstract_bench import AbstractBench, DATA_DIR_NAME
+from benchmark_apis.abstract_interface import AbstractHPOData, RESULT_KEYS, ResultType
 
 from yahpo_gym import benchmark_set, local_config
 
@@ -160,11 +161,11 @@ class LCBench(AbstractBench):
                 eval_config[name] = int(eval_config[name])
                 assert isinstance(eval_config[name], int) and lb <= eval_config[name] <= ub
 
-    def __call__(
+    def __call__(  # type: ignore[override]
         self,
         eval_config: dict[str, int | float],
         *,
-        fidels: dict[str, int | float] = {},
+        fidels: dict[str, int] = {},
         seed: int | None = None,
         benchdata: LCBenchSurrogate | None = None,
     ) -> ResultType:
@@ -194,11 +195,11 @@ class LCBench(AbstractBench):
         return config_space
 
     @property
-    def min_fidels(self) -> dict[str, int | float]:
+    def min_fidels(self) -> dict[str, int]:  # type: ignore[override]
         return {_FIDEL_KEY: self._min_epoch}
 
     @property
-    def max_fidels(self) -> dict[str, int | float]:
+    def max_fidels(self) -> dict[str, int]:  # type: ignore[override]
         # in reality, the max_fidel is 52, but make it 54 only for computational convenience.
         return {_FIDEL_KEY: self._max_epoch}
 

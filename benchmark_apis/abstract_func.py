@@ -1,29 +1,16 @@
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
-from dataclasses import dataclass
-from typing import ClassVar, TypedDict
+from abc import abstractmethod
+from typing import ClassVar
 
 import ConfigSpace as CS
+
+from benchmark_apis.abstract_interface import AbstractInterface, RESULT_KEYS, ResultType
 
 import numpy as np
 
 
-@dataclass(frozen=True)
-class _ResultKeys:
-    loss: str = "loss"
-    runtime: str = "runtime"
-
-
-class ResultType(TypedDict):
-    loss: float
-    runtime: float
-
-
-RESULT_KEYS = _ResultKeys()
-
-
-class MFAbstractFunc(metaclass=ABCMeta):
+class MFAbstractFunc(AbstractInterface):
     """
     Multi-fidelity Function.
 
@@ -48,7 +35,6 @@ class MFAbstractFunc(metaclass=ABCMeta):
             URL: https://arxiv.org/pdf/1703.06240.pdf
     """
 
-    _DATASET_NAMES: list[str] | None = None
     _BENCH_TYPE: ClassVar[str] = "SYNTHETIC"
     _DEFAULT_FIDEL_DIM: ClassVar[int]
 
@@ -60,6 +46,7 @@ class MFAbstractFunc(metaclass=ABCMeta):
         seed: int | None,
         runtime_factor: float,
     ):
+        super().__init__(seed=seed)
         if runtime_factor <= 0:
             raise ValueError(f"`runtime_factor` must be positive, but got {runtime_factor}")
         if fidel_dim not in [self._DEFAULT_FIDEL_DIM, 1]:
@@ -68,7 +55,6 @@ class MFAbstractFunc(metaclass=ABCMeta):
                 f"but got {fidel_dim}"
             )
 
-        self._rng = np.random.RandomState(seed)
         self._fidel_dim = fidel_dim
         self._runtime_factor = runtime_factor
         self._dim: int
@@ -82,9 +68,6 @@ class MFAbstractFunc(metaclass=ABCMeta):
             raise ValueError(f"min_fidel < max_fidel must hold, but got {min_fidel=} and {max_fidel=}")
         if min_fidel <= 0:
             raise ValueError(f"min_fidel must be in [1, {self._max_fidel}], but got {min_fidel=} and {max_fidel=}")
-
-    def reseed(self, seed: int) -> None:
-        self._rng = np.random.RandomState(seed)
 
     @abstractmethod
     def _objective(self, x: np.ndarray, z: np.ndarray) -> float:
@@ -100,7 +83,7 @@ class MFAbstractFunc(metaclass=ABCMeta):
         if np.any((z < self._min_fidel / self._max_fidel) | (z > 1.0)):
             raise ValueError(f"All elements in fidels must be in [{self._min_fidel}, {self._max_fidel}]")
 
-    def __call__(
+    def __call__(  # type: ignore[override]
         self,
         eval_config: dict[str, float],
         *,
@@ -126,12 +109,12 @@ class MFAbstractFunc(metaclass=ABCMeta):
         return self._fidel_dim
 
     @property
-    def min_fidels(self) -> dict[str, int]:
+    def min_fidels(self) -> dict[str, int]:  # type: ignore[override]
         # the real minimum is 3
         return {f"z{d}": self._min_fidel for d in range(self.fidel_dim)}
 
     @property
-    def max_fidels(self) -> dict[str, int]:
+    def max_fidels(self) -> dict[str, int]:  # type: ignore[override]
         return {f"z{d}": self._max_fidel for d in range(self.fidel_dim)}
 
     @property

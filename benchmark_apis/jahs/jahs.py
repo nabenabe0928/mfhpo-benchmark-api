@@ -6,14 +6,8 @@ from typing import ClassVar
 
 import ConfigSpace as CS
 
-from benchmark_apis.abstract_bench import (
-    AbstractBench,
-    AbstractHPOData,
-    DATA_DIR_NAME,
-    RESULT_KEYS,
-    ResultType,
-    VALUE_RANGES,
-)
+from benchmark_apis.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES
+from benchmark_apis.abstract_interface import AbstractHPOData, RESULT_KEYS, ResultType
 
 try:
     import jahs_bench
@@ -143,7 +137,7 @@ class JAHSBench201(AbstractBench):
             data_dir=self._data_dir, dataset_name=self.dataset_name, target_metrics=self._target_metrics
         )
 
-    def __call__(
+    def __call__(  # type: ignore[override]
         self,
         eval_config: dict[str, int | float | str | bool],
         *,
