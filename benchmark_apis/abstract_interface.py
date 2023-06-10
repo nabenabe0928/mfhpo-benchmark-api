@@ -1,13 +1,21 @@
 from __future__ import annotations
 
+import os
+import warnings
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from typing import ClassVar, Optional, TypedDict
-import os
 
 import ConfigSpace as CS
 
 import numpy as np
+
+
+def _warn_not_found_module(bench_name: str) -> None:
+    cmd = "pip install mfhpo-benchmark-api"
+    warnings.warn(
+        f"{bench_name} requirements not found. Use `{cmd}[full]` or `{cmd}[{bench_name}]` when using {bench_name}."
+    )
 
 
 @dataclass(frozen=True)

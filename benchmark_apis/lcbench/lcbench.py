@@ -7,9 +7,12 @@ from typing import ClassVar
 import ConfigSpace as CS
 
 from benchmark_apis.abstract_bench import AbstractBench, DATA_DIR_NAME
-from benchmark_apis.abstract_interface import AbstractHPOData, RESULT_KEYS, ResultType
+from benchmark_apis.abstract_interface import AbstractHPOData, RESULT_KEYS, ResultType, _warn_not_found_module
 
-from yahpo_gym import benchmark_set, local_config
+try:
+    from yahpo_gym import benchmark_set, local_config
+except ModuleNotFoundError:
+    _warn_not_found_module(bench_name="lcbench")
 
 
 @dataclass(frozen=True)

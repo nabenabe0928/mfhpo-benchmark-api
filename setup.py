@@ -1,21 +1,37 @@
+import os
 import setuptools
 
 
-requirements = []
-with open("requirements.txt", "r") as f:
+min_requirements = []
+with open("requirements-minimal.txt", "r") as f:
     for line in f:
-        requirements.append(line.strip())
+        min_requirements.append(line.strip())
 
+
+pkg_name = "mfhpo-benchmark-api"
+author = "nabenabe0928"
+main_dir = "benchmark_apis"
+pkgs = [main_dir]
+dir_names = [fn for fn in os.listdir(main_dir) if os.path.isdir(os.path.join(main_dir, fn))]
+pkgs += [
+    os.path.join(main_dir, dir_name) for dir_name in dir_names if all(not dir_name.startswith(s) for s in ["_", "."])
+]
+extra_requirements = {
+    "jahs": ["jahs-bench"],
+    "lcbench": ["yahpo-gym"],
+    "full": ["jahs-bench", "yahpo-gym"],
+}
 
 setuptools.setup(
-    name="mfhpo-benchmark-api",
-    version="0.0.1",
-    author="nabenabe0928",
-    author_email="shuhei.watanabe.utokyo@gmail.com",
-    url="https://github.com/nabenabe0928/mfhpo-benchmark-api",
-    packages=setuptools.find_packages(),
+    name=pkg_name,
     python_requires=">=3.8",
     platforms=["Linux", "Darwin"],
-    install_requires=requirements,
+    version="1.0.3",
+    author=author,
+    author_email="shuhei.watanabe.utokyo@gmail.com",
+    url=f"https://github.com/{author}/{pkg_name}",
+    packages=pkgs,
+    install_requires=min_requirements,
+    extras_require=extra_requirements,
     include_package_data=True,
 )

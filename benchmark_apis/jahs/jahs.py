@@ -7,12 +7,12 @@ from typing import ClassVar
 import ConfigSpace as CS
 
 from benchmark_apis.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES
-from benchmark_apis.abstract_interface import AbstractHPOData, RESULT_KEYS, ResultType
+from benchmark_apis.abstract_interface import AbstractHPOData, RESULT_KEYS, ResultType, _warn_not_found_module
 
 try:
     import jahs_bench
 except ModuleNotFoundError:  # We cannot use jahs with smac
-    pass
+    _warn_not_found_module(bench_name="jahs")
 
 
 @dataclass(frozen=True)
