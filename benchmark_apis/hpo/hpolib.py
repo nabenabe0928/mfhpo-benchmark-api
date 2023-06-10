@@ -7,7 +7,7 @@ from typing import ClassVar, Literal, TypedDict
 
 import ConfigSpace as CS
 
-from benchmark_apis.abstract_interface import AbstractHPOData, RESULT_KEYS, ResultType
+from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType
 from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES
 
 import numpy as np

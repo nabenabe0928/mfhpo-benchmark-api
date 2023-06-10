@@ -61,7 +61,7 @@ class AbstractHPOData(metaclass=ABCMeta):
             raise FileNotFoundError(self.full_install_instruction)
 
 
-class AbstractInterface(metaclass=ABCMeta):
+class AbstractAPI(metaclass=ABCMeta):
     _BENCH_TYPE: ClassVar[str]
     _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...] | None]
 

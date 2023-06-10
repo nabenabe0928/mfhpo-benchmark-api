@@ -7,7 +7,7 @@ from typing import ClassVar, Final
 
 import ConfigSpace as CS
 
-from benchmark_apis.abstract_interface import AbstractHPOData, AbstractInterface
+from benchmark_apis.abstract_api import AbstractAPI, AbstractHPOData
 
 
 curdir = os.path.dirname(os.path.abspath(__file__))
@@ -16,7 +16,7 @@ SEARCH_SPACE_PATH: Final[str] = os.path.join(curdir, "discrete_search_spaces.jso
 VALUE_RANGES: Final[dict[str, dict[str, list[int | float | str | bool]]]] = json.load(open(SEARCH_SPACE_PATH))
 
 
-class AbstractBench(AbstractInterface):
+class AbstractBench(AbstractAPI):
     _BENCH_TYPE: ClassVar[str] = "HPO"
     _TARGET_METRIC_KEYS: ClassVar[list[str]]
     _N_DATASETS: ClassVar[int]

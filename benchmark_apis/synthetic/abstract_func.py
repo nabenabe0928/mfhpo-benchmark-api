@@ -5,12 +5,12 @@ from typing import ClassVar
 
 import ConfigSpace as CS
 
-from benchmark_apis.abstract_interface import AbstractInterface, RESULT_KEYS, ResultType
+from benchmark_apis.abstract_api import AbstractAPI, RESULT_KEYS, ResultType
 
 import numpy as np
 
 
-class MFAbstractFunc(AbstractInterface):
+class MFAbstractFunc(AbstractAPI):
     """
     Multi-fidelity Function.
 
