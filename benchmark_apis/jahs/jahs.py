@@ -31,6 +31,7 @@ class _FidelKeys:
 _FIDEL_KEYS = _FidelKeys()
 _TARGET_KEYS = _TargetMetricKeys()
 _DATA_DIR = os.path.join(DATA_DIR_NAME, "jahs")
+_DATASET_NAMES = ["cifar10", "fashion_mnist", "colorectal_histology"]
 
 
 class JAHSBenchSurrogate(AbstractHPOData):
@@ -110,6 +111,7 @@ class JAHSBench201(AbstractBench):
     _N_DATASETS: ClassVar[int] = 3
     _MAX_EPOCH: ClassVar[int] = 200
     _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k for k in _TARGET_KEYS.__dict__.keys()]
+    _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...]] = tuple("-".join(name.split("_")) for name in _DATASET_NAMES)
 
     def __init__(
         self,
@@ -122,7 +124,7 @@ class JAHSBench201(AbstractBench):
         max_resol: float = 1.0,
         keep_benchdata: bool = True,
     ):
-        self.dataset_name = ["cifar10", "fashion_mnist", "colorectal_histology"][dataset_id]
+        self.dataset_name = _DATASET_NAMES[dataset_id]
         self._value_range = VALUE_RANGES["jahs"]
         self._target_metrics = target_metrics[:]
         self._min_epoch, self._max_epoch = min_epoch, max_epoch

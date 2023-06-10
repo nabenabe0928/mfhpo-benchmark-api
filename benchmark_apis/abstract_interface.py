@@ -63,6 +63,7 @@ class AbstractHPOData(metaclass=ABCMeta):
 
 class AbstractInterface(metaclass=ABCMeta):
     _BENCH_TYPE: ClassVar[str]
+    _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...] | None]
 
     def __init__(self, seed: int | None):
         self._rng = np.random.RandomState(seed)

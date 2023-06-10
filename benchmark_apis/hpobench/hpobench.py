@@ -25,6 +25,16 @@ _TARGET_KEYS = _TargetMetricKeys()
 _FIDEL_KEY = "epoch"
 _KEY_ORDER = ["alpha", "batch_size", "depth", "learning_rate_init", "width"]
 _DATA_DIR = os.path.join(DATA_DIR_NAME, "hpobench")
+_DATASET_NAMES = (
+    "australian",
+    "blood_transfusion",
+    "car",
+    "credit_g",
+    "kc1",
+    "phoneme",
+    "segment",
+    "vehicle",
+)
 
 
 class RowDataType(TypedDict):
@@ -96,6 +106,7 @@ class HPOBench(AbstractBench):
     _MAX_EPOCH: ClassVar[int] = 243
     _BUDGETS: ClassVar[list[int]] = [3, 9, 27, 81, 243]
     _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k for k in _TARGET_KEYS.__dict__.keys()]
+    _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...]] = tuple("-".join(name.split("_")) for name in _DATASET_NAMES)
 
     def __init__(
         self,
@@ -106,16 +117,7 @@ class HPOBench(AbstractBench):
         max_epoch: int = 243,
         keep_benchdata: bool = True,
     ):
-        self.dataset_name = [
-            "australian",
-            "blood_transfusion",
-            "car",
-            "credit_g",
-            "kc1",
-            "phoneme",
-            "segment",
-            "vehicle",
-        ][dataset_id]
+        self.dataset_name = _DATASET_NAMES[dataset_id]
         self._db = self.get_benchdata() if keep_benchdata else None
         self._rng = np.random.RandomState(seed)
         self._value_range = VALUE_RANGES["hpobench"]

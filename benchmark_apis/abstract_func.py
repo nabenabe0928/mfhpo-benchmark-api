@@ -37,6 +37,7 @@ class MFAbstractFunc(AbstractInterface):
 
     _BENCH_TYPE: ClassVar[str] = "SYNTHETIC"
     _DEFAULT_FIDEL_DIM: ClassVar[int]
+    _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...] | None] = None
 
     def __init__(
         self,

@@ -34,6 +34,12 @@ _KEY_ORDER = [
     "n_units_2",
 ]
 _DATA_DIR = os.path.join(DATA_DIR_NAME, "hpolib")
+_DATASET_NAMES = (
+    "slice_localization",
+    "protein_structure",
+    "naval_propulsion",
+    "parkinsons_telemonitoring",
+)
 
 
 class RowDataType(TypedDict):
@@ -105,6 +111,7 @@ class HPOLib(AbstractBench):
     _N_SEEDS: ClassVar[int] = 4
     _MAX_EPOCH: ClassVar[int] = 100
     _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k for k in _TARGET_KEYS.__dict__.keys()]
+    _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...]] = tuple("-".join(name.split("_")) for name in _DATASET_NAMES)
 
     def __init__(
         self,
@@ -115,12 +122,7 @@ class HPOLib(AbstractBench):
         max_epoch: int = 100,
         keep_benchdata: bool = True,
     ):
-        self.dataset_name = [
-            "slice_localization",
-            "protein_structure",
-            "naval_propulsion",
-            "parkinsons_telemonitoring",
-        ][dataset_id]
+        self.dataset_name = _DATASET_NAMES[dataset_id]
         self._db = self.get_benchdata() if keep_benchdata else None
         self._rng = np.random.RandomState(seed)
         self._value_range = VALUE_RANGES["hpolib"]

@@ -24,6 +24,42 @@ class _TargetMetricKeys:
 _TARGET_KEYS = _TargetMetricKeys()
 _FIDEL_KEY = "epoch"
 _DATA_DIR = os.path.join(DATA_DIR_NAME, "lcbench")
+_DATASET_INFO = (
+    ("kddcup09_appetency", "3945"),
+    ("covertype", "7593"),
+    ("amazon_employee_access", "34539"),
+    ("adult", "126025"),
+    ("nomao", "126026"),
+    ("bank_marketing", "126029"),
+    ("shuttle", "146212"),
+    ("australian", "167104"),
+    ("kr_vs_kp", "167149"),
+    ("mfeat_factors", "167152"),
+    ("credit_g", "167161"),
+    ("vehicle", "167168"),
+    ("kc1", "167181"),
+    ("blood_transfusion_service_center", "167184"),
+    ("cnae_9", "167185"),
+    ("phoneme", "167190"),
+    ("higgs", "167200"),
+    ("connect_4", "167201"),
+    ("helena", "168329"),
+    ("jannis", "168330"),
+    ("volkert", "168331"),
+    ("mini_boo_ne", "168335"),
+    ("aps_failure", "168868"),
+    ("christine", "168908"),
+    ("fabert", "168910"),
+    ("airlines", "189354"),
+    ("jasmine", "189862"),
+    ("sylvine", "189865"),
+    ("albert", "189866"),
+    ("dionis", "189873"),
+    ("car", "189905"),
+    ("segment", "189906"),
+    ("fashion_mnist", "189908"),
+    ("jungle_chess_2pcs_raw_endgame_complete", "189909"),
+)
 
 
 class LCBenchSurrogate(AbstractHPOData):
@@ -103,6 +139,7 @@ class LCBench(AbstractBench):
     _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k for k in _TARGET_KEYS.__dict__.keys()]
     _MAX_EPOCH: ClassVar[int] = 54
     _TRUE_MAX_EPOCH: ClassVar[int] = 52
+    _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...]] = tuple("-".join(name.split("_")) for name, _ in _DATASET_INFO)
 
     def __init__(
         self,
@@ -113,43 +150,7 @@ class LCBench(AbstractBench):
         max_epoch: int = 54,
         keep_benchdata: bool = True,
     ):
-        dataset_info = (
-            ("kddcup09_appetency", "3945"),
-            ("covertype", "7593"),
-            ("amazon_employee_access", "34539"),
-            ("adult", "126025"),
-            ("nomao", "126026"),
-            ("bank_marketing", "126029"),
-            ("shuttle", "146212"),
-            ("australian", "167104"),
-            ("kr_vs_kp", "167149"),
-            ("mfeat_factors", "167152"),
-            ("credit_g", "167161"),
-            ("vehicle", "167168"),
-            ("kc1", "167181"),
-            ("blood_transfusion_service_center", "167184"),
-            ("cnae_9", "167185"),
-            ("phoneme", "167190"),
-            ("higgs", "167200"),
-            ("connect_4", "167201"),
-            ("helena", "168329"),
-            ("jannis", "168330"),
-            ("volkert", "168331"),
-            ("mini_boo_ne", "168335"),
-            ("aps_failure", "168868"),
-            ("christine", "168908"),
-            ("fabert", "168910"),
-            ("airlines", "189354"),
-            ("jasmine", "189862"),
-            ("sylvine", "189865"),
-            ("albert", "189866"),
-            ("dionis", "189873"),
-            ("car", "189905"),
-            ("segment", "189906"),
-            ("fashion_mnist", "189908"),
-            ("jungle_chess_2pcs_raw_endgame_complete", "189909"),
-        )
-        self.dataset_name, self._dataset_id = dataset_info[dataset_id]
+        self.dataset_name, self._dataset_id = _DATASET_INFO[dataset_id]
         self._target_metrics = target_metrics[:]
         self._surrogate = self.get_benchdata() if keep_benchdata else None
         self._config_space = self.config_space
