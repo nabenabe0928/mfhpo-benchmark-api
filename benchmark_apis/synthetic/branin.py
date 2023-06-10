@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import ClassVar
 
-from benchmark_apis.abstract_func import MFAbstractFunc
+from benchmark_apis.synthetic.abstract_func import MFAbstractFunc
 
 import numpy as np
 
