@@ -10,8 +10,9 @@ import ConfigSpace as CS
 from benchmark_apis.abstract_interface import AbstractHPOData, AbstractInterface
 
 
+curdir = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR_NAME: Final[str] = os.path.join(os.environ["HOME"], "hpo_benchmarks")
-SEARCH_SPACE_PATH: Final[str] = "benchmark_apis/discrete_search_spaces.json"
+SEARCH_SPACE_PATH: Final[str] = os.path.join(curdir, "discrete_search_spaces.json")
 VALUE_RANGES: Final[dict[str, dict[str, list[int | float | str | bool]]]] = json.load(open(SEARCH_SPACE_PATH))
 
 
