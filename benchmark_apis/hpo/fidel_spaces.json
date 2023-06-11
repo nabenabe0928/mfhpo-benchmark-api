@@ -1,0 +1,30 @@
+{
+    "hpobench": {
+        "epoch": {
+            "hard": {"lower": 3, "upper": 243},
+            "default": {"lower": 27, "upper": 243}
+        }
+    },
+    "hpolib": {
+        "epoch": {
+            "hard": {"lower": 1, "upper": 100},
+            "default": {"lower": 11, "upper": 100}
+        }
+    },
+    "jahs": {
+        "epoch": {
+            "hard": {"lower": 1, "upper": 200},
+            "default": {"lower": 22, "upper": 200}
+        },
+        "resol": {
+            "hard": {"lower": 0.0, "upper": 1.0},
+            "default": {"lower": 0.1, "upper": 1.0}
+        }
+    },
+    "lcbench": {
+        "epoch": {
+            "hard": {"lower": 1, "upper": 54},
+            "default": {"lower": 6, "upper": 54}
+        }
+    }
+}

@@ -17,6 +17,24 @@ class _FidelKeys:
     resol: str | None = None
 
 
+@dataclass(frozen=True)
+class _ValueRange:
+    lower: int | float
+    upper: int | float
+
+
+@dataclass(frozen=True)
+class _ValueRanges:
+    hard: _ValueRange
+    default: _ValueRange
+
+
+@dataclass(frozen=True)
+class _FidelValueRanges:
+    epoch: _ValueRanges
+    resol: _ValueRanges | None = None
+
+
 class _ContinuousSpaceParams(TypedDict):
     type_: Literal["int", "float"]
     lower: int | float
@@ -30,6 +48,7 @@ class _BenchClassVars:
     n_datasets: int
     target_metric_keys: list[str]
     fidel_keys: _FidelKeys
+    fidel_space: _FidelValueRanges
     disc_space: dict[str, list[int | float | str | bool]] | None = None
     cont_space: dict[str, _ContinuousSpaceParams] | None = None
 
@@ -39,8 +58,18 @@ DATA_DIR_NAME: Final[str] = os.path.join(os.environ["HOME"], "hpo_benchmarks")
 DATASET_NAME_PATH: Final[str] = os.path.join(curdir, "dataset_names.json")
 CONT_SPACE_PATH: Final[str] = os.path.join(curdir, "continuous_search_spaces.json")
 DISC_SPACE_PATH: Final[str] = os.path.join(curdir, "discrete_search_spaces.json")
+FIDEL_SPACE_PATH: Final[str] = os.path.join(curdir, "fidel_spaces.json")
 CONT_SPACES: Final[dict[str, dict[str, _ContinuousSpaceParams]]] = json.load(open(CONT_SPACE_PATH))
 DISC_SPACES: Final[dict[str, dict[str, list[int | float | str | bool]]]] = json.load(open(DISC_SPACE_PATH))
+FIDEL_SPACES: Final[dict[str, _FidelValueRanges]] = {
+    bench_name: _FidelValueRanges(
+        **{
+            fidel: _ValueRanges(**{type_: _ValueRange(**range_) for type_, range_ in ranges.items()})
+            for fidel, ranges in fidels.items()
+        }
+    )
+    for bench_name, fidels in json.load(open(FIDEL_SPACE_PATH)).items()
+}
 DATASET_NAMES: Final[dict[str, list[str]]] = json.load(open(DATASET_NAME_PATH))
 
 
@@ -64,7 +93,9 @@ class AbstractBench(AbstractAPI):
         self._dataset_name = dataset_name
         self._benchdata = self.get_benchdata() if keep_benchdata else None
         self._config_space = self.config_space
+        self._fidel_value_ranges: dict[str, _ValueRange]
 
+        # self._validate_fidel_value_range()
         self._validate_target_metrics()
         self._validate_epochs()
         self._validate_class_vars()
@@ -72,6 +103,23 @@ class AbstractBench(AbstractAPI):
     @abstractmethod
     def get_benchdata(self) -> AbstractHPOData:
         raise NotImplementedError
+
+    def _validate_fidel_value_ranges(self, fidel_value_ranges: dict[str, tuple[int | float, int | float]]) -> None:
+        if any(fidel_key not in self.fidel_keys for fidel_key in fidel_value_ranges):
+            fidel_keys = list(fidel_value_ranges.keys())
+            raise KeyError(f"Keys in fidel_value_ranges must be in {self.fidel_keys}, but got {fidel_keys}")
+
+        self._fidel_value_ranges = {}
+        for fidel_key, value_ranges in self._CONSTS.fidel_space.__dict__.items():
+            hard_lower, hard_upper = value_ranges.hard.lower, value_ranges.hard.upper
+            lower, upper = fidel_value_ranges.get(fidel_key, (value_ranges.default.lower, value_ranges.default.upper))
+            self._fidel_value_ranges[fidel_key] = _ValueRange(lower=lower, upper=upper)
+            if lower < hard_lower or upper > hard_upper:
+                raise ValueError(f"{fidel_key} must be in [{hard_lower}, {hard_upper}], but got {lower=} and {upper=}")
+            if lower >= upper:
+                raise ValueError(
+                    f"lower < upper for {fidel_key} must hold, but got {lower=} and {upper=} in fidel_value_ranges"
+                )
 
     @classmethod
     def _validate_class_vars(cls) -> None:
@@ -98,6 +146,17 @@ class AbstractBench(AbstractAPI):
 
             if not ok:
                 raise ValueError(f"{name} must be in [{lb=}, {ub=}], but got {eval_config[name]}.")
+
+    def _validate_fidels(self, fidels: dict[str, int | float]) -> None:
+        for fidel_key, value_range in self._fidel_value_ranges.items():
+            lower, upper = value_range.lower, value_range.upper
+            if fidel_key not in fidels:
+                fidels[fidel_key] = self.max_fidels[fidel_key]
+                continue
+
+            fidel_val = fidels[fidel_key]
+            if not (lower <= fidel_val <= upper):
+                raise ValueError(f"{fidel_key} must be in [{lower}, {upper}], but got {fidel_val}.")
 
     def _validate_target_metrics(self) -> None:
         target_metrics = self._target_metrics

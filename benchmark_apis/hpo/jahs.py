@@ -17,6 +17,7 @@ from benchmark_apis.hpo.abstract_bench import (
     DATASET_NAMES,
     DATA_DIR_NAME,
     DISC_SPACES,
+    FIDEL_SPACES,
     _BenchClassVars,
     _FidelKeys,
 )
@@ -113,6 +114,7 @@ class JAHSBench201(AbstractBench):
         target_metric_keys=[k for k, v in _TARGET_KEYS.__dict__.items() if v is not None],
         cont_space=CONT_SPACES[_BENCH_NAME],
         disc_space=DISC_SPACES[_BENCH_NAME],
+        fidel_space=FIDEL_SPACES[_BENCH_NAME],
         fidel_keys=_FidelKeys(epoch="epoch", resol="Resolution"),
     )
 
