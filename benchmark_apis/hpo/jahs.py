@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import ClassVar, Literal
+from typing import Literal
 
 import ConfigSpace as CS
 
 from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType, _warn_not_found_module
-from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES
+from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES, _BenchClassVars
 
 try:
     import jahs_bench
@@ -108,11 +108,12 @@ class JAHSBench201(AbstractBench):
             https://ml.informatik.uni-freiburg.de/research-artifacts/jahs_bench_201/v1.1.0/assembled_surrogates.tar
     """
 
-    _MAX_EPOCH: ClassVar[int] = 200
-    _N_DATASETS: ClassVar[int] = 3
-    _VALUE_RANGE: ClassVar[dict[str, list[int | float | str | bool]]] = VALUE_RANGES["jahs"]
-    _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k for k in _TARGET_KEYS.__dict__.keys()]
-    _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...]] = tuple("-".join(name.split("_")) for name in _DATASET_NAMES)
+    _CONSTS = _BenchClassVars(
+        max_epoch=200,
+        n_datasets=len(_DATASET_NAMES),
+        target_metric_keys=[k for k in _TARGET_KEYS.__dict__.keys()],
+        value_range=VALUE_RANGES["jahs"],
+    )
 
     def __init__(
         self,
@@ -162,9 +163,11 @@ class JAHSBench201(AbstractBench):
         _fidels.update(**fidels)
         surrogate = benchdata if self._benchdata is None else self._benchdata
         assert surrogate is not None and isinstance(surrogate, JAHSBenchSurrogate)  # mypy redefinition
+        assert self._CONSTS.value_range is not None  # mypy redefinition
         EPS = 1e-12
         _eval_config = {
-            k: self._VALUE_RANGE[k][int(v)] if k in self._VALUE_RANGE else float(v) for k, v in eval_config.items()
+            k: self._CONSTS.value_range[k][int(v)] if k in self._CONSTS.value_range else float(v)
+            for k, v in eval_config.items()
         }
         assert isinstance(_eval_config["LearningRate"], float)
         assert 1e-3 - EPS <= _eval_config["LearningRate"] <= 1.0 + EPS

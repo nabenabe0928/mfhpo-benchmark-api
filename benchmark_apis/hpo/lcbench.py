@@ -7,7 +7,7 @@ from typing import ClassVar, Literal
 import ConfigSpace as CS
 
 from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType, _warn_not_found_module
-from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME
+from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, _BenchClassVars
 
 try:
     from yahpo_gym import benchmark_set, local_config
@@ -134,10 +134,11 @@ class LCBench(AbstractBench):
             https://syncandshare.lrz.de/getlink/fiCMkzqj1bv1LfCUyvZKmLvd/
     """
 
-    _MAX_EPOCH: ClassVar[int] = 54
-    _N_DATASETS: ClassVar[int] = 34
-    _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k for k in _TARGET_KEYS.__dict__.keys()]
-    _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...]] = tuple("-".join(name.split("_")) for name, _ in _DATASET_INFO)
+    _CONSTS = _BenchClassVars(
+        max_epoch=54,
+        n_datasets=len(_DATASET_INFO),
+        target_metric_keys=[k for k in _TARGET_KEYS.__dict__.keys()],
+    )
 
     # LCBench specific constant
     _TRUE_MAX_EPOCH: ClassVar[int] = 52

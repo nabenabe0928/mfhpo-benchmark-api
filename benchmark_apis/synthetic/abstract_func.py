@@ -37,7 +37,6 @@ class MFAbstractFunc(AbstractAPI):
 
     _BENCH_TYPE: ClassVar[str] = "SYNTHETIC"
     _DEFAULT_FIDEL_DIM: ClassVar[int]
-    _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...] | None] = None
 
     def __init__(
         self,
@@ -107,6 +106,10 @@ class MFAbstractFunc(AbstractAPI):
         loss = self._objective(x=x, z=z)
         runtime = self._runtime(x=x, z=z)
         return {RESULT_KEYS.loss: loss, RESULT_KEYS.runtime: runtime}  # type: ignore
+
+    @property
+    def dataset_name_for_dir(self) -> str | None:
+        return None
 
     @property
     def dim(self) -> int:

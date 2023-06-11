@@ -3,11 +3,20 @@ from __future__ import annotations
 import json
 import os
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import ClassVar, Final
 
 import ConfigSpace as CS
 
 from benchmark_apis.abstract_api import AbstractAPI, AbstractHPOData
+
+
+@dataclass(frozen=True)
+class _BenchClassVars:
+    max_epoch: int
+    n_datasets: int
+    target_metric_keys: list[str]
+    value_range: dict[str, list[int | float | str | bool]] | None = None
 
 
 curdir = os.path.dirname(os.path.abspath(__file__))
@@ -18,10 +27,7 @@ VALUE_RANGES: Final[dict[str, dict[str, list[int | float | str | bool]]]] = json
 
 class AbstractBench(AbstractAPI):
     _BENCH_TYPE: ClassVar[str] = "HPO"
-    _VALUE_RANGE: ClassVar[dict[str, list[int | float | str | bool]] | None] = None
-    _MAX_EPOCH: ClassVar[int]
-    _N_DATASETS: ClassVar[int]
-    _TARGET_METRIC_KEYS: ClassVar[list[str]]
+    _CONSTS: _BenchClassVars
 
     def __init__(
         self,
@@ -46,26 +52,25 @@ class AbstractBench(AbstractAPI):
     @classmethod
     def _validate_class_vars(cls) -> None:
         super()._validate_class_vars()
-        for var_name in ["_MAX_EPOCH", "_N_DATASETS", "_TARGET_METRIC_KEYS"]:
-            if not hasattr(cls, var_name):
-                raise NotImplementedError(f"Child class of {cls.__name__} must define {var_name}.")
+        if not hasattr(cls, "_CONSTS"):
+            raise NotImplementedError(f"Child class of {cls.__name__} must define _CONSTS.")
 
     def _validate_target_metrics(self) -> None:
         target_metrics = self._target_metrics
-        if any(tm not in self._TARGET_METRIC_KEYS for tm in target_metrics):
+        if any(tm not in self._CONSTS.target_metric_keys for tm in target_metrics):
             raise ValueError(
-                f"All elements in target_metrics must be in {self._TARGET_METRIC_KEYS}, but got {target_metrics}"
+                f"All elements in target_metrics must be in {self._CONSTS.target_metric_keys}, but got {target_metrics}"
             )
 
     def _validate_epochs(self) -> None:
         min_epoch, max_epoch = self._min_epoch, self._max_epoch
-        if min_epoch <= 0 or max_epoch > self._MAX_EPOCH:
-            raise ValueError(f"epoch must be in [1, {self._MAX_EPOCH}], but got {min_epoch=} and {max_epoch=}")
+        if min_epoch <= 0 or max_epoch > self._CONSTS.max_epoch:
+            raise ValueError(f"epoch must be in [1, {self._CONSTS.max_epoch}], but got {min_epoch=} and {max_epoch=}")
         if min_epoch >= max_epoch:
             raise ValueError(f"min_epoch < max_epoch must hold, but got {min_epoch=} and {max_epoch=}")
 
     def _fetch_discrete_config_space(self) -> CS.ConfigurationSpace:
-        if self._VALUE_RANGE is None:
+        if self._CONSTS.value_range is None:
             raise ValueError("_VALUE_RANGE must be specified, but got None.")
 
         config_space = CS.ConfigurationSpace()
@@ -74,10 +79,14 @@ class AbstractBench(AbstractAPI):
                 CS.UniformIntegerHyperparameter(name=name, lower=0, upper=len(choices) - 1)
                 if not isinstance(choices[0], (str, bool))
                 else CS.CategoricalHyperparameter(name=name, choices=[str(i) for i in range(len(choices))])
-                for name, choices in self._VALUE_RANGE.items()
+                for name, choices in self._CONSTS.value_range.items()
             ]
         )
         return config_space
+
+    @property
+    def dataset_name_for_dir(self) -> str | None:
+        return "-".join(self.dataset_name.split("_"))
 
     @property
     def dataset_name(self) -> str:

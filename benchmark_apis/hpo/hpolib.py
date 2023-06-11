@@ -8,7 +8,7 @@ from typing import ClassVar, Literal, TypedDict
 import ConfigSpace as CS
 
 from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType
-from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES
+from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES, _BenchClassVars
 
 import numpy as np
 
@@ -106,11 +106,12 @@ class HPOLib(AbstractBench):
         Use https://github.com/nabenabe0928/hpolib-extractor to extract the pickle file.
     """
 
-    _MAX_EPOCH: ClassVar[int] = 100
-    _N_DATASETS: ClassVar[int] = 4
-    _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k for k in _TARGET_KEYS.__dict__.keys()]
-    _VALUE_RANGE: ClassVar[dict[str, list[int | float | str | bool]]] = VALUE_RANGES["hpolib"]
-    _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...]] = tuple("-".join(name.split("_")) for name in _DATASET_NAMES)
+    _CONSTS = _BenchClassVars(
+        max_epoch=100,
+        n_datasets=len(_DATASET_NAMES),
+        target_metric_keys=[k for k in _TARGET_KEYS.__dict__.keys()],
+        value_range=VALUE_RANGES["hpolib"],
+    )
 
     # HPOLib specific constant
     _N_SEEDS: ClassVar[int] = 4

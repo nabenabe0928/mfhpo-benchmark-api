@@ -73,7 +73,6 @@ class AbstractHPOData(metaclass=ABCMeta):
 
 class AbstractAPI(metaclass=ABCMeta):
     _BENCH_TYPE: ClassVar[str]
-    _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...] | None]
 
     def __init__(self, seed: int | None):
         self._rng = np.random.RandomState(seed)
@@ -83,9 +82,8 @@ class AbstractAPI(metaclass=ABCMeta):
 
     @classmethod
     def _validate_class_vars(cls) -> None:
-        for var_name in ["_BENCH_TYPE", "_DATASET_NAMES_FOR_DIR"]:
-            if not hasattr(cls, var_name):
-                raise NotImplementedError(f"Child class of {cls.__name__} must define {var_name}.")
+        if not hasattr(cls, "_BENCH_TYPE"):
+            raise NotImplementedError(f"Child class of {cls.__name__} must define _BENCH_TYPE.")
 
     @abstractmethod
     def __call__(
@@ -96,6 +94,11 @@ class AbstractAPI(metaclass=ABCMeta):
         seed: int | None = None,
         benchdata: AbstractHPOData | None = None,
     ) -> ResultType:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def dataset_name_for_dir(self) -> str | None:
         raise NotImplementedError
 
     @property
