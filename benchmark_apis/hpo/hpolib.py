@@ -107,11 +107,14 @@ class HPOLib(AbstractBench):
         Use https://github.com/nabenabe0928/hpolib-extractor to extract the pickle file.
     """
 
-    _N_DATASETS: ClassVar[int] = 4
-    _N_SEEDS: ClassVar[int] = 4
     _MAX_EPOCH: ClassVar[int] = 100
+    _N_DATASETS: ClassVar[int] = 4
     _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k for k in _TARGET_KEYS.__dict__.keys()]
+    _VALUE_RANGE: ClassVar[dict[str, list[int | float | str | bool]]] = VALUE_RANGES["hpolib"]
     _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...]] = tuple("-".join(name.split("_")) for name in _DATASET_NAMES)
+
+    # HPOLib specific constant
+    _N_SEEDS: ClassVar[int] = 4
 
     def __init__(
         self,
@@ -122,15 +125,14 @@ class HPOLib(AbstractBench):
         max_epoch: int = 100,
         keep_benchdata: bool = True,
     ):
-        self.dataset_name = _DATASET_NAMES[dataset_id]
-        self._db = self.get_benchdata() if keep_benchdata else None
-        self._rng = np.random.RandomState(seed)
-        self._value_range = VALUE_RANGES["hpolib"]
-        self._min_epoch, self._max_epoch = min_epoch, max_epoch
-        self._target_metrics = target_metrics[:]  # type: ignore
-
-        self._validate_target_metrics()
-        self._validate_epochs()
+        super().__init__(
+            seed=seed,
+            min_epoch=min_epoch,
+            max_epoch=max_epoch,
+            target_metrics=target_metrics[:],  # type: ignore
+            dataset_name=_DATASET_NAMES[dataset_id],
+            keep_benchdata=keep_benchdata,
+        )
 
     def get_benchdata(self) -> HPOLibDatabase:
         return HPOLibDatabase(self.dataset_name)
@@ -143,11 +145,11 @@ class HPOLib(AbstractBench):
         seed: int | None = None,
         benchdata: HPOLibDatabase | None = None,
     ) -> ResultType:
-        if benchdata is None and self._db is None:
+        if benchdata is None and self._benchdata is None:
             raise ValueError("data must be provided when `keep_benchdata` is False")
 
-        db = benchdata if self._db is None else self._db
-        assert db is not None  # mypy redefinition
+        db = benchdata if self._benchdata is None else self._benchdata
+        assert db is not None and isinstance(db, HPOLibDatabase)  # mypy redefinition
         fidel = int(fidels.get(_FIDEL_KEY, self._max_epoch))
         idx = seed % self._N_SEEDS if seed is not None else self._rng.randint(self._N_SEEDS)
         config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 import ConfigSpace as CS
 
@@ -47,7 +47,9 @@ class JAHSBenchSurrogate(AbstractHPOData):
         self._target_metrics = target_metrics[:]
         _metrics = [getattr(_TARGET_KEYS, tm) for tm in self._target_metrics]
         metrics = list(set(_metrics + [_TARGET_KEYS.runtime]))
-        self._surrogate = jahs_bench.Benchmark(task=dataset_name, download=False, save_dir=_DATA_DIR, metrics=metrics)
+        self._surrogate = jahs_bench.Benchmark(
+            task=dataset_name, download=False, save_dir=self._data_dir, metrics=metrics
+        )
 
     @property
     def install_instruction(self) -> str:
@@ -107,9 +109,9 @@ class JAHSBench201(AbstractBench):
             https://ml.informatik.uni-freiburg.de/research-artifacts/jahs_bench_201/v1.1.0/assembled_surrogates.tar
     """
 
-    _target_metric: ClassVar[str] = "valid-acc"
-    _N_DATASETS: ClassVar[int] = 3
     _MAX_EPOCH: ClassVar[int] = 200
+    _N_DATASETS: ClassVar[int] = 3
+    _VALUE_RANGE: ClassVar[dict[str, list[int | float | str | bool]]] = VALUE_RANGES["jahs"]
     _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k for k in _TARGET_KEYS.__dict__.keys()]
     _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...]] = tuple("-".join(name.split("_")) for name in _DATASET_NAMES)
 
@@ -117,22 +119,23 @@ class JAHSBench201(AbstractBench):
         self,
         dataset_id: int,
         seed: int | None = None,  # surrogate is not stochastic
-        target_metrics: list[str] = [RESULT_KEYS.loss],
+        target_metrics: list[Literal["loss", "runtime", "model_size"]] = [RESULT_KEYS.loss],  # type: ignore
         min_epoch: int = 22,
         max_epoch: int = 200,
         min_resol: float = 0.1,
         max_resol: float = 1.0,
         keep_benchdata: bool = True,
     ):
-        self.dataset_name = _DATASET_NAMES[dataset_id]
-        self._value_range = VALUE_RANGES["jahs"]
-        self._target_metrics = target_metrics[:]
-        self._min_epoch, self._max_epoch = min_epoch, max_epoch
-        self._min_resol, self._max_resol = min_resol, max_resol
-        self._surrogate = self.get_benchdata() if keep_benchdata else None
+        super().__init__(
+            seed=seed,
+            min_epoch=min_epoch,
+            max_epoch=max_epoch,
+            target_metrics=target_metrics[:],  # type: ignore
+            dataset_name=_DATASET_NAMES[dataset_id],
+            keep_benchdata=keep_benchdata,
+        )
 
-        self._validate_target_metrics()
-        self._validate_epochs()
+        self._min_resol, self._max_resol = min_resol, max_resol
         self._validate_resols()
 
     def _validate_resols(self) -> None:
@@ -153,16 +156,16 @@ class JAHSBench201(AbstractBench):
         seed: int | None = None,
         benchdata: JAHSBenchSurrogate | None = None,
     ) -> ResultType:
-        if benchdata is None and self._surrogate is None:
+        if benchdata is None and self._benchdata is None:
             raise ValueError("data must be provided when `keep_benchdata` is False")
 
         _fidels = self.max_fidels
         _fidels.update(**fidels)
-        surrogate = benchdata if self._surrogate is None else self._surrogate
-        assert surrogate is not None  # mypy redefinition
+        surrogate = benchdata if self._benchdata is None else self._benchdata
+        assert surrogate is not None and isinstance(surrogate, JAHSBenchSurrogate)  # mypy redefinition
         EPS = 1e-12
         _eval_config = {
-            k: self._value_range[k][int(v)] if k in self._value_range else float(v) for k, v in eval_config.items()
+            k: self._VALUE_RANGE[k][int(v)] if k in self._VALUE_RANGE else float(v) for k, v in eval_config.items()
         }
         assert isinstance(_eval_config["LearningRate"], float)
         assert 1e-3 - EPS <= _eval_config["LearningRate"] <= 1.0 + EPS

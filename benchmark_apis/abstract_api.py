@@ -71,6 +71,12 @@ class AbstractAPI(metaclass=ABCMeta):
     def reseed(self, seed: int) -> None:
         self._rng = np.random.RandomState(seed)
 
+    @classmethod
+    def _validate_class_vars(cls) -> None:
+        for var_name in ["_BENCH_TYPE", "_DATASET_NAMES_FOR_DIR"]:
+            if not hasattr(cls, var_name):
+                raise ValueError(f"Child class of {cls.__name__} must define {var_name}.")
+
     @abstractmethod
     def __call__(
         self,

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 import ConfigSpace as CS
 
@@ -135,36 +135,39 @@ class LCBench(AbstractBench):
             https://syncandshare.lrz.de/getlink/fiCMkzqj1bv1LfCUyvZKmLvd/
     """
 
+    _MAX_EPOCH: ClassVar[int] = 54
     _N_DATASETS: ClassVar[int] = 34
     _TARGET_METRIC_KEYS: ClassVar[list[str]] = [k for k in _TARGET_KEYS.__dict__.keys()]
-    _MAX_EPOCH: ClassVar[int] = 54
-    _TRUE_MAX_EPOCH: ClassVar[int] = 52
     _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...]] = tuple("-".join(name.split("_")) for name, _ in _DATASET_INFO)
+
+    # LCBench specific constant
+    _TRUE_MAX_EPOCH: ClassVar[int] = 52
 
     def __init__(
         self,
         dataset_id: int,
         seed: int | None = None,  # surrogate is not stochastic
-        target_metrics: list[str] = [RESULT_KEYS.loss],
+        target_metrics: list[Literal["loss", "runtime"]] = [RESULT_KEYS.loss],  # type: ignore
         min_epoch: int = 6,
         max_epoch: int = 54,
         keep_benchdata: bool = True,
     ):
-        self.dataset_name, self._dataset_id = _DATASET_INFO[dataset_id]
-        self._target_metrics = target_metrics[:]
-        self._surrogate = self.get_benchdata() if keep_benchdata else None
-        self._config_space = self.config_space
-        self._min_epoch, self._max_epoch = min_epoch, max_epoch
-
-        self._validate_target_metrics()
-        self._validate_epochs()
+        dataset_name, self._dataset_id = _DATASET_INFO[dataset_id]
+        super().__init__(
+            seed=seed,
+            min_epoch=min_epoch,
+            max_epoch=max_epoch,
+            target_metrics=target_metrics[:],  # type: ignore
+            dataset_name=dataset_name,
+            keep_benchdata=keep_benchdata,
+        )
 
     def get_benchdata(self) -> LCBenchSurrogate:
         return LCBenchSurrogate(dataset_id=self._dataset_id, target_metrics=self._target_metrics)
 
     def _validate_config(self, eval_config: dict[str, int | float]) -> None:
         EPS = 1e-12
-        for hp in self._config_space.get_hyperparameters():
+        for hp in self.config_space.get_hyperparameters():
             lb, ub, name = hp.lower, hp.upper, hp.name
             if isinstance(hp, CS.UniformFloatHyperparameter):
                 assert isinstance(eval_config[name], float) and lb - EPS <= eval_config[name] <= ub + EPS
@@ -180,11 +183,11 @@ class LCBench(AbstractBench):
         seed: int | None = None,
         benchdata: LCBenchSurrogate | None = None,
     ) -> ResultType:
-        if benchdata is None and self._surrogate is None:
+        if benchdata is None and self._benchdata is None:
             raise ValueError("data must be provided when `keep_benchdata` is False")
 
-        surrogate = benchdata if self._surrogate is None else self._surrogate
-        assert surrogate is not None  # mypy redefinition
+        surrogate = benchdata if self._benchdata is None else self._benchdata
+        assert surrogate is not None and isinstance(surrogate, LCBenchSurrogate)  # mypy redefinition
         fidel = int(min(self._TRUE_MAX_EPOCH, fidels.get(_FIDEL_KEY, self._max_epoch)))
         self._validate_config(eval_config=eval_config)
         return surrogate(eval_config=eval_config, fidel=fidel)

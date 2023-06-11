@@ -18,14 +18,37 @@ VALUE_RANGES: Final[dict[str, dict[str, list[int | float | str | bool]]]] = json
 
 class AbstractBench(AbstractAPI):
     _BENCH_TYPE: ClassVar[str] = "HPO"
-    _TARGET_METRIC_KEYS: ClassVar[list[str]]
-    _N_DATASETS: ClassVar[int]
+    _VALUE_RANGE: ClassVar[dict[str, list[int | float | str | bool]] | None] = None
     _MAX_EPOCH: ClassVar[int]
-    _min_epoch: int
-    _max_epoch: int
-    _target_metrics: list[str]
-    _value_range: dict[str, list[int | float | str | bool]]
-    dataset_name: str
+    _N_DATASETS: ClassVar[int]
+    _TARGET_METRIC_KEYS: ClassVar[list[str]]
+
+    def __init__(
+        self,
+        seed: int | None,
+        min_epoch: int,
+        max_epoch: int,
+        target_metrics: list[str],
+        dataset_name: str,
+        keep_benchdata: bool,
+    ):
+        super().__init__(seed=seed)
+        self._min_epoch = min_epoch
+        self._max_epoch = max_epoch
+        self._target_metrics = target_metrics[:]
+        self._dataset_name = dataset_name
+        self._benchdata = self.get_benchdata() if keep_benchdata else None
+
+        self._validate_target_metrics()
+        self._validate_epochs()
+        self._validate_class_vars()
+
+    @classmethod
+    def _validate_class_vars(cls) -> None:
+        super()._validate_class_vars()
+        for var_name in ["_MAX_EPOCH", "_N_DATASETS", "_TARGET_METRIC_KEYS"]:
+            if not hasattr(cls, var_name):
+                raise ValueError(f"Child class of {cls.__name__} must define {var_name}.")
 
     def _validate_target_metrics(self) -> None:
         target_metrics = self._target_metrics
@@ -42,16 +65,23 @@ class AbstractBench(AbstractAPI):
             raise ValueError(f"min_epoch < max_epoch must hold, but got {min_epoch=} and {max_epoch=}")
 
     def _fetch_discrete_config_space(self) -> CS.ConfigurationSpace:
+        if self._VALUE_RANGE is None:
+            raise ValueError("_VALUE_RANGE must be specified, but got None.")
+
         config_space = CS.ConfigurationSpace()
         config_space.add_hyperparameters(
             [
                 CS.UniformIntegerHyperparameter(name=name, lower=0, upper=len(choices) - 1)
                 if not isinstance(choices[0], (str, bool))
                 else CS.CategoricalHyperparameter(name=name, choices=[str(i) for i in range(len(choices))])
-                for name, choices in self._value_range.items()
+                for name, choices in self._VALUE_RANGE.items()
             ]
         )
         return config_space
+
+    @property
+    def dataset_name(self) -> str:
+        return self._dataset_name
 
     @abstractmethod
     def get_benchdata(self) -> AbstractHPOData:

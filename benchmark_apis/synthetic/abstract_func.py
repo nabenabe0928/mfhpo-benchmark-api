@@ -62,6 +62,13 @@ class MFAbstractFunc(AbstractAPI):
         self._noise_std: float
         self._min_fidel, self._max_fidel = min_fidel, max_fidel
         self._validate_fidels()
+        self._validate_class_vars()
+
+    @classmethod
+    def _validate_class_vars(cls) -> None:
+        super()._validate_class_vars()
+        if not hasattr(cls, "_DEFAULT_FIDEL_DIM"):
+            raise ValueError(f"Child class of {cls.__name__} must define _DEFAULT_FIDEL_DIM.")
 
     def _validate_fidels(self) -> None:
         min_fidel, max_fidel = self._min_fidel, self._max_fidel
