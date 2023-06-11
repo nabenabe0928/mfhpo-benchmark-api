@@ -9,6 +9,7 @@ from benchmark_apis.abstract_api import (
     AbstractHPOData,
     RESULT_KEYS,
     ResultType,
+    _HPODataClassVars,
     _TargetMetricKeys,
     _warn_not_found_module,
 )
@@ -65,8 +66,10 @@ _DATASET_INFO = (
 class LCBenchSurrogate(AbstractHPOData):
     """Workaround to prevent dask from serializing the objective func"""
 
-    _data_url = "https://syncandshare.lrz.de/getlink/fiCMkzqj1bv1LfCUyvZKmLvd/"
-    _data_dir = os.path.join(DATA_DIR_NAME, "lcbench")
+    _CONSTS = _HPODataClassVars(
+        url="https://syncandshare.lrz.de/getlink/fiCMkzqj1bv1LfCUyvZKmLvd/",
+        dir=os.path.join(DATA_DIR_NAME, "lcbench"),
+    )
 
     def __init__(self, dataset_id: str, target_metrics: list[str]):
         self._validate()
@@ -78,8 +81,8 @@ class LCBenchSurrogate(AbstractHPOData):
     @property
     def install_instruction(self) -> str:
         return (
-            f"\tAccess to {self._data_url} and download `lcbench.zip` from the website.\n\n"
-            f"After that, please unzip `lcbench.zip` in {self._data_dir}."
+            f"\tAccess to {self._CONSTS.url} and download `lcbench.zip` from the website.\n\n"
+            f"After that, please unzip `lcbench.zip` in {self._CONSTS.dir}."
         )
 
     def _check_benchdata_availability(self) -> None:
@@ -167,16 +170,6 @@ class LCBench(AbstractBench):
     def get_benchdata(self) -> LCBenchSurrogate:
         return LCBenchSurrogate(dataset_id=self._dataset_id, target_metrics=self._target_metrics)
 
-    def _validate_config(self, eval_config: dict[str, int | float]) -> None:
-        EPS = 1e-12
-        for hp in self.config_space.get_hyperparameters():
-            lb, ub, name = hp.lower, hp.upper, hp.name
-            if isinstance(hp, CS.UniformFloatHyperparameter):
-                assert isinstance(eval_config[name], float) and lb - EPS <= eval_config[name] <= ub + EPS
-            else:
-                eval_config[name] = int(eval_config[name])
-                assert isinstance(eval_config[name], int) and lb <= eval_config[name] <= ub
-
     def __call__(  # type: ignore[override]
         self,
         eval_config: dict[str, int | float],
@@ -188,7 +181,7 @@ class LCBench(AbstractBench):
         surrogate = self._validate_benchdata(benchdata)
         assert surrogate is not None and isinstance(surrogate, LCBenchSurrogate)  # mypy redefinition
         fidel = int(min(self._TRUE_MAX_EPOCH, fidels.get(self._CONSTS.fidel_keys.epoch, self._max_epoch)))
-        self._validate_config(eval_config=eval_config)
+        self._validate_config(eval_config=eval_config)  # type: ignore
         return surrogate(eval_config=eval_config, fidel=fidel)
 
     @property

@@ -51,16 +51,41 @@ class AbstractBench(AbstractAPI):
         self._target_metrics = target_metrics[:]
         self._dataset_name = dataset_name
         self._benchdata = self.get_benchdata() if keep_benchdata else None
+        self._config_space = self.config_space
 
         self._validate_target_metrics()
         self._validate_epochs()
         self._validate_class_vars()
+
+    @abstractmethod
+    def get_benchdata(self) -> AbstractHPOData:
+        raise NotImplementedError
 
     @classmethod
     def _validate_class_vars(cls) -> None:
         super()._validate_class_vars()
         if not hasattr(cls, "_CONSTS"):
             raise NotImplementedError(f"Child class of {cls.__name__} must define _CONSTS.")
+
+    def _validate_config(self, eval_config: dict[str, int | float | str | bool]) -> None:
+        EPS = 1e-12
+        for hp in self._config_space.get_hyperparameters():
+            name, val = hp.name, eval_config[hp.name]
+            if isinstance(hp, CS.CategoricalHyperparameter):
+                if val not in hp.choices:
+                    raise ValueError(f"{name} must be in {hp.choices}, but got {val}.")
+
+                continue
+
+            lb, ub = hp.lower, hp.upper
+            if isinstance(hp, CS.UniformFloatHyperparameter):
+                ok = isinstance(val, float) and lb - EPS <= val <= ub + EPS
+            else:
+                eval_config[name] = int(val)
+                ok = lb <= eval_config[name] <= ub
+
+            if not ok:
+                raise ValueError(f"{name} must be in [{lb=}, {ub=}], but got {eval_config[name]}.")
 
     def _validate_target_metrics(self) -> None:
         target_metrics = self._target_metrics
@@ -106,10 +131,6 @@ class AbstractBench(AbstractAPI):
     @property
     def dataset_name(self) -> str:
         return self._dataset_name
-
-    @abstractmethod
-    def get_benchdata(self) -> AbstractHPOData:
-        raise NotImplementedError
 
     @property
     def min_fidels(self) -> dict[str, int | float]:

@@ -9,6 +9,7 @@ from benchmark_apis.abstract_api import (
     AbstractHPOData,
     RESULT_KEYS,
     ResultType,
+    _HPODataClassVars,
     _TargetMetricKeys,
     _warn_not_found_module,
 )
@@ -31,10 +32,10 @@ _DATASET_NAMES = ("cifar10", "fashion_mnist", "colorectal_histology")
 class JAHSBenchSurrogate(AbstractHPOData):
     """Workaround to prevent dask from serializing the objective func"""
 
-    _data_url = (
-        "https://ml.informatik.uni-freiburg.de/research-artifacts/jahs_bench_201/v1.1.0/assembled_surrogates.tar"
+    _CONSTS = _HPODataClassVars(
+        url="https://ml.informatik.uni-freiburg.de/research-artifacts/jahs_bench_201/v1.1.0/assembled_surrogates.tar",
+        dir=os.path.join(DATA_DIR_NAME, "jahs"),
     )
-    _data_dir = os.path.join(DATA_DIR_NAME, "jahs")
 
     def __init__(self, dataset_name: str, target_metrics: list[str]):
         self._validate()
@@ -42,15 +43,15 @@ class JAHSBenchSurrogate(AbstractHPOData):
         _metrics = [getattr(_TARGET_KEYS, tm) for tm in self._target_metrics]
         metrics = list(set(_metrics + [_TARGET_KEYS.runtime]))
         self._surrogate = jahs_bench.Benchmark(
-            task=dataset_name, download=False, save_dir=self._data_dir, metrics=metrics
+            task=dataset_name, download=False, save_dir=self._CONSTS.dir, metrics=metrics
         )
 
     @property
     def install_instruction(self) -> str:
         return (
-            f"$ cd {self._data_dir}\n"
-            f"$ wget {self._data_url}\n\n"
-            f"Then untar `assembled_surrogates.tar` in {self._data_dir}."
+            f"$ cd {self._CONSTS.dir}\n"
+            f"$ wget {self._CONSTS.url}\n\n"
+            f"Then untar `assembled_surrogates.tar` in {self._CONSTS.dir}."
         )
 
     def __call__(self, eval_config: dict[str, int | float | str | bool], fidels: dict[str, int | float]) -> ResultType:
@@ -158,15 +159,11 @@ class JAHSBench201(AbstractBench):
         _fidels = self.max_fidels
         _fidels.update(**fidels)
         assert self._CONSTS.value_range is not None  # mypy redefinition
-        EPS = 1e-12
         _eval_config = {
             k: self._CONSTS.value_range[k][int(v)] if k in self._CONSTS.value_range else float(v)
             for k, v in eval_config.items()
         }
-        assert isinstance(_eval_config["LearningRate"], float)
-        assert 1e-3 - EPS <= _eval_config["LearningRate"] <= 1.0 + EPS
-        assert isinstance(_eval_config["WeightDecay"], float)
-        assert 1e-5 - EPS <= _eval_config["WeightDecay"] <= 1e-2 + EPS
+        self._validate_config(eval_config=eval_config)
         return surrogate(eval_config=_eval_config, fidels=_fidels)
 
     @property

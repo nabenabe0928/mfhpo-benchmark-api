@@ -6,7 +6,7 @@ from typing import ClassVar, Literal, TypedDict
 
 import ConfigSpace as CS
 
-from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType, _TargetMetricKeys
+from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType, _HPODataClassVars, _TargetMetricKeys
 from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES, _BenchClassVars, _FidelKeys
 
 import numpy as np
@@ -45,19 +45,21 @@ class RowDataType(TypedDict):
 class HPOLibDatabase(AbstractHPOData):
     """Workaround to prevent dask from serializing the objective func"""
 
-    _data_url = "http://ml4aad.org/wp-content/uploads/2019/01/fcnet_tabular_benchmarks.tar.gz"
-    _data_dir = os.path.join(DATA_DIR_NAME, "hpolib")
+    _CONSTS = _HPODataClassVars(
+        url="http://ml4aad.org/wp-content/uploads/2019/01/fcnet_tabular_benchmarks.tar.gz",
+        dir=os.path.join(DATA_DIR_NAME, "hpolib"),
+    )
 
     def __init__(self, dataset_name: str):
-        self._benchdata_path = os.path.join(self._data_dir, f"{dataset_name}.pkl")
+        self._benchdata_path = os.path.join(self._CONSTS.dir, f"{dataset_name}.pkl")
         self._validate()
         self._db = pickle.load(open(self._benchdata_path, "rb"))
 
     @property
     def install_instruction(self) -> str:
         return (
-            f"\t$ cd {self._data_dir}\n"
-            f"\t$ wget {self._data_url}\n"
+            f"\t$ cd {self._CONSTS.dir}\n"
+            f"\t$ wget {self._CONSTS.url}\n"
             "\t$ tar xf fcnet_tabular_benchmarks.tar.gz\n"
             "\t$ mv fcnet_tabular_benchmarks/*.hdf5 .\n"
             "\t$ rm -r fcnet_tabular_benchmarks/\n\n"

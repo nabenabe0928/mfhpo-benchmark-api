@@ -63,6 +63,14 @@ class MFAbstractFunc(AbstractAPI):
         self._validate_fidels()
         self._validate_class_vars()
 
+    @abstractmethod
+    def _objective(self, x: np.ndarray, z: np.ndarray) -> float:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _runtime(self, x: np.ndarray, z: np.ndarray) -> float:
+        raise NotImplementedError
+
     @classmethod
     def _validate_class_vars(cls) -> None:
         super()._validate_class_vars()
@@ -75,14 +83,6 @@ class MFAbstractFunc(AbstractAPI):
             raise ValueError(f"min_fidel < max_fidel must hold, but got {min_fidel=} and {max_fidel=}")
         if min_fidel <= 0:
             raise ValueError(f"min_fidel must be in [1, {self._max_fidel}], but got {min_fidel=} and {max_fidel=}")
-
-    @abstractmethod
-    def _objective(self, x: np.ndarray, z: np.ndarray) -> float:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _runtime(self, x: np.ndarray, z: np.ndarray) -> float:
-        raise NotImplementedError
 
     def _validate_config(self, x: np.ndarray, z: np.ndarray) -> None:
         if np.any((x < 0.0) | (x > 1.0)):

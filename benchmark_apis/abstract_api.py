@@ -36,6 +36,12 @@ class _TargetMetricKeys:
     precision: str | None = None
 
 
+@dataclass(frozen=True)
+class _HPODataClassVars:
+    url: str
+    dir: str
+
+
 class ResultType(TypedDict):
     runtime: float
     loss: Optional[float]
@@ -48,35 +54,33 @@ RESULT_KEYS = _ResultKeys()
 
 
 class AbstractHPOData(metaclass=ABCMeta):
-    _data_url: str
-    _data_dir: str
+    _CONSTS: _HPODataClassVars
 
     def _validate(self) -> None:
         self._validate_class_var()
         self._check_benchdata_availability()
-
-    @classmethod
-    def _validate_class_var(cls) -> None:
-        for var_name in ["_data_url", "_data_dir"]:
-            if not hasattr(cls, var_name):
-                raise NotImplementedError(f"Child class of {cls.__name__} must define {var_name}.")
-
-    @property
-    def full_install_instruction(self) -> str:
-        return (
-            f"Could not find the dataset at {self._data_dir}.\n"
-            f"Download the dataset and place the file at {self._data_dir}.\n"
-            "You can download the dataset via:\n"
-            f"{self.install_instruction}"
-        )
 
     @property
     @abstractmethod
     def install_instruction(self) -> str:
         raise NotImplementedError
 
+    @classmethod
+    def _validate_class_var(cls) -> None:
+        if not hasattr(cls, "_CONSTS"):
+            raise NotImplementedError(f"Child class of {cls.__name__} must define _CONSTS.")
+
+    @property
+    def full_install_instruction(self) -> str:
+        return (
+            f"Could not find the dataset at {self._CONSTS.dir}.\n"
+            f"Download the dataset and place the file at {self._CONSTS.dir}.\n"
+            "You can download the dataset via:\n"
+            f"{self.install_instruction}"
+        )
+
     def _check_benchdata_availability(self) -> None:
-        if not os.path.exists(self._data_dir):
+        if not os.path.exists(self._CONSTS.dir):
             raise FileNotFoundError(self.full_install_instruction)
 
 
@@ -85,14 +89,6 @@ class AbstractAPI(metaclass=ABCMeta):
 
     def __init__(self, seed: int | None):
         self._rng = np.random.RandomState(seed)
-
-    def reseed(self, seed: int) -> None:
-        self._rng = np.random.RandomState(seed)
-
-    @classmethod
-    def _validate_class_vars(cls) -> None:
-        if not hasattr(cls, "_BENCH_TYPE"):
-            raise NotImplementedError(f"Child class of {cls.__name__} must define _BENCH_TYPE.")
 
     @abstractmethod
     def __call__(
@@ -130,3 +126,11 @@ class AbstractAPI(metaclass=ABCMeta):
     @abstractmethod
     def fidel_keys(self) -> list[str]:
         raise NotImplementedError
+
+    def reseed(self, seed: int) -> None:
+        self._rng = np.random.RandomState(seed)
+
+    @classmethod
+    def _validate_class_vars(cls) -> None:
+        if not hasattr(cls, "_BENCH_TYPE"):
+            raise NotImplementedError(f"Child class of {cls.__name__} must define _BENCH_TYPE.")

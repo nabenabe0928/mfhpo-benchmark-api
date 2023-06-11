@@ -6,7 +6,7 @@ from typing import ClassVar, Literal, TypedDict
 
 import ConfigSpace as CS
 
-from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType, _TargetMetricKeys
+from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType, _HPODataClassVars, _TargetMetricKeys
 from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES, _BenchClassVars, _FidelKeys
 
 
@@ -39,19 +39,21 @@ class RowDataType(TypedDict):
 class HPOBenchDatabase(AbstractHPOData):
     """Workaround to prevent dask from serializing the objective func"""
 
-    _data_url = "https://ndownloader.figshare.com/files/30379005/"
-    _data_dir = os.path.join(DATA_DIR_NAME, "hpobench")
+    _CONSTS = _HPODataClassVars(
+        url="https://ndownloader.figshare.com/files/30379005/",
+        dir=os.path.join(DATA_DIR_NAME, "hpobench"),
+    )
 
     def __init__(self, dataset_name: str):
-        self._benchdata_path = os.path.join(self._data_dir, f"{dataset_name}.pkl")
+        self._benchdata_path = os.path.join(self._CONSTS.dir, f"{dataset_name}.pkl")
         self._validate()
         self._db = pickle.load(open(self._benchdata_path, "rb"))
 
     @property
     def install_instruction(self) -> str:
         return (
-            f"\t$ cd {self._data_dir}\n"
-            f"\t$ wget {self._data_url}\n"
+            f"\t$ cd {self._CONSTS.dir}\n"
+            f"\t$ wget {self._CONSTS.url}\n"
             "\t$ unzip nn.zip\n\n"
             "Then extract the pkl file using https://github.com/nabenabe0928/hpolib-extractor/.\n"
             f"You should get `{self._benchdata_path}` in the end."
