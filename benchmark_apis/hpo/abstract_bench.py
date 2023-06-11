@@ -36,10 +36,12 @@ class _BenchClassVars:
 
 curdir = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR_NAME: Final[str] = os.path.join(os.environ["HOME"], "hpo_benchmarks")
-DISC_SPACE_PATH: Final[str] = os.path.join(curdir, "discrete_search_spaces.json")
+DATASET_NAME_PATH: Final[str] = os.path.join(curdir, "dataset_names.json")
 CONT_SPACE_PATH: Final[str] = os.path.join(curdir, "continuous_search_spaces.json")
-DISC_SPACES: Final[dict[str, dict[str, list[int | float | str | bool]]]] = json.load(open(DISC_SPACE_PATH))
+DISC_SPACE_PATH: Final[str] = os.path.join(curdir, "discrete_search_spaces.json")
 CONT_SPACES: Final[dict[str, dict[str, _ContinuousSpaceParams]]] = json.load(open(CONT_SPACE_PATH))
+DISC_SPACES: Final[dict[str, dict[str, list[int | float | str | bool]]]] = json.load(open(DISC_SPACE_PATH))
+DATASET_NAMES: Final[dict[str, list[str]]] = json.load(open(DATASET_NAME_PATH))
 
 
 class AbstractBench(AbstractAPI):

@@ -1,0 +1,59 @@
+{
+    "hpobench": [
+        "australian",
+        "blood_transfusion",
+        "car",
+        "credit_g",
+        "kc1",
+        "phoneme",
+        "segment",
+        "vehicle"
+    ],
+    "hpolib": [
+        "slice_localization",
+        "protein_structure",
+        "naval_propulsion",
+        "parkinsons_telemonitoring"
+    ],
+    "jahs": [
+        "cifar10",
+        "fashion_mnist",
+        "colorectal_histology"
+    ],
+    "lcbench": [
+        "kddcup09_appetency",
+        "covertype",
+        "amazon_employee_access",
+        "adult",
+        "nomao",
+        "bank_marketing",
+        "shuttle",
+        "australian",
+        "kr_vs_kp",
+        "mfeat_factors",
+        "credit_g",
+        "vehicle",
+        "kc1",
+        "blood_transfusion_service_center",
+        "cnae_9",
+        "phoneme",
+        "higgs",
+        "connect_4",
+        "helena",
+        "jannis",
+        "volkert",
+        "mini_boo_ne",
+        "aps_failure",
+        "christine",
+        "fabert",
+        "airlines",
+        "jasmine",
+        "sylvine",
+        "albert",
+        "dionis",
+        "car",
+        "segment",
+        "fashion_mnist",
+        "jungle_chess_2pcs_raw_endgame_complete"
+    ]
+}

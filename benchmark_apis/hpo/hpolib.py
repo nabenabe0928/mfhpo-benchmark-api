@@ -5,16 +5,19 @@ import pickle
 from typing import ClassVar, Literal, TypedDict
 
 from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType, _HPODataClassVars, _TargetMetricKeys
-from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, DISC_SPACES, _BenchClassVars, _FidelKeys
+from benchmark_apis.hpo.abstract_bench import (
+    AbstractBench,
+    DATASET_NAMES,
+    DATA_DIR_NAME,
+    DISC_SPACES,
+    _BenchClassVars,
+    _FidelKeys,
+)
 
 import numpy as np
 
 
-_TARGET_KEYS = _TargetMetricKeys(
-    loss="valid_mse",
-    runtime="runtime",
-    model_size="n_params",
-)
+_TARGET_KEYS = _TargetMetricKeys(loss="valid_mse", runtime="runtime", model_size="n_params")
 _BENCH_NAME = "hpolib"
 _KEY_ORDER = [
     "activation_fn_1",
@@ -27,12 +30,7 @@ _KEY_ORDER = [
     "n_units_1",
     "n_units_2",
 ]
-_DATASET_NAMES = (
-    "slice_localization",
-    "protein_structure",
-    "naval_propulsion",
-    "parkinsons_telemonitoring",
-)
+_DATASET_NAMES = DATASET_NAMES[_BENCH_NAME]
 
 
 class RowDataType(TypedDict):

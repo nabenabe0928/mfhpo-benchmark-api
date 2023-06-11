@@ -22,6 +22,7 @@ extra_requirements = {
     "full": ["jahs-bench", "yahpo-gym"],
 }
 
+json_data = [fn for fn in os.listdir("benchmark_apis/hpo") if fn.endswith(".json")]
 setuptools.setup(
     name=pkg_name,
     python_requires=">=3.8",
@@ -31,7 +32,7 @@ setuptools.setup(
     author_email="shuhei.watanabe.utokyo@gmail.com",
     url=f"https://github.com/{author}/{pkg_name}",
     packages=pkgs,
-    package_data={"": ["discrete_search_spaces.json"]},
+    package_data={"": json_data},
     install_requires=min_requirements,
     extras_require=extra_requirements,
     include_package_data=True,

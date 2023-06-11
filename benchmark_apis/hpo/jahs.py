@@ -14,6 +14,7 @@ from benchmark_apis.abstract_api import (
 from benchmark_apis.hpo.abstract_bench import (
     AbstractBench,
     CONT_SPACES,
+    DATASET_NAMES,
     DATA_DIR_NAME,
     DISC_SPACES,
     _BenchClassVars,
@@ -26,13 +27,9 @@ except ModuleNotFoundError:  # We cannot use jahs with smac
     _warn_not_found_module(bench_name="jahs")
 
 
-_TARGET_KEYS = _TargetMetricKeys(
-    loss="valid-acc",
-    runtime="runtime",
-    model_size="size_MB",
-)
+_TARGET_KEYS = _TargetMetricKeys(loss="valid-acc", runtime="runtime", model_size="size_MB")
 _BENCH_NAME = "jahs"
-_DATASET_NAMES = ("cifar10", "fashion_mnist", "colorectal_histology")
+_DATASET_NAMES = DATASET_NAMES[_BENCH_NAME]
 
 
 class JAHSBenchSurrogate(AbstractHPOData):

@@ -5,27 +5,20 @@ import pickle
 from typing import ClassVar, Literal, TypedDict
 
 from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType, _HPODataClassVars, _TargetMetricKeys
-from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, DISC_SPACES, _BenchClassVars, _FidelKeys
-
-
-_TARGET_KEYS = _TargetMetricKeys(
-    loss="bal_acc",
-    runtime="runtime",
-    precision="precision",
-    f1="f1",
+from benchmark_apis.hpo.abstract_bench import (
+    AbstractBench,
+    DATASET_NAMES,
+    DATA_DIR_NAME,
+    DISC_SPACES,
+    _BenchClassVars,
+    _FidelKeys,
 )
+
+
+_TARGET_KEYS = _TargetMetricKeys(loss="bal_acc", runtime="runtime", precision="precision", f1="f1")
 _BENCH_NAME = "hpobench"
 _KEY_ORDER = ["alpha", "batch_size", "depth", "learning_rate_init", "width"]
-_DATASET_NAMES = (
-    "australian",
-    "blood_transfusion",
-    "car",
-    "credit_g",
-    "kc1",
-    "phoneme",
-    "segment",
-    "vehicle",
-)
+_DATASET_NAMES = DATASET_NAMES[_BENCH_NAME]
 
 
 class RowDataType(TypedDict):
