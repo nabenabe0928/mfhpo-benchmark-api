@@ -42,6 +42,16 @@ class AbstractHPOData(metaclass=ABCMeta):
     _data_url: str
     _data_dir: str
 
+    def _validate(self) -> None:
+        self._validate_class_var()
+        self._check_benchdata_availability()
+
+    @classmethod
+    def _validate_class_var(cls) -> None:
+        for var_name in ["_data_url", "_data_dir"]:
+            if not hasattr(cls, var_name):
+                raise NotImplementedError(f"Child class of {cls.__name__} must define {var_name}.")
+
     @property
     def full_install_instruction(self) -> str:
         return (
@@ -75,7 +85,7 @@ class AbstractAPI(metaclass=ABCMeta):
     def _validate_class_vars(cls) -> None:
         for var_name in ["_BENCH_TYPE", "_DATASET_NAMES_FOR_DIR"]:
             if not hasattr(cls, var_name):
-                raise ValueError(f"Child class of {cls.__name__} must define {var_name}.")
+                raise NotImplementedError(f"Child class of {cls.__name__} must define {var_name}.")
 
     @abstractmethod
     def __call__(

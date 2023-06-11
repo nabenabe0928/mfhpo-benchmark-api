@@ -21,7 +21,7 @@ class _TargetMetricKeys:
 
 
 _TARGET_KEYS = _TargetMetricKeys()
-_FIDEL_KEY = "epoch"
+_FIDEL_KEY = "epoch"  # this is not class var, because we wanna use dataclass for multiple fidelities
 _KEY_ORDER = [
     "activation_fn_1",
     "activation_fn_2",
@@ -33,7 +33,6 @@ _KEY_ORDER = [
     "n_units_1",
     "n_units_2",
 ]
-_DATA_DIR = os.path.join(DATA_DIR_NAME, "hpolib")
 _DATASET_NAMES = (
     "slice_localization",
     "protein_structure",
@@ -52,11 +51,11 @@ class HPOLibDatabase(AbstractHPOData):
     """Workaround to prevent dask from serializing the objective func"""
 
     _data_url = "http://ml4aad.org/wp-content/uploads/2019/01/fcnet_tabular_benchmarks.tar.gz"
-    _data_dir = _DATA_DIR
+    _data_dir = os.path.join(DATA_DIR_NAME, "hpolib")
 
     def __init__(self, dataset_name: str):
         self._benchdata_path = os.path.join(self._data_dir, f"{dataset_name}.pkl")
-        self._check_benchdata_availability()
+        self._validate()
         self._db = pickle.load(open(self._benchdata_path, "rb"))
 
     @property

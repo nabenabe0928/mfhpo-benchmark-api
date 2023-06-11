@@ -20,9 +20,8 @@ class _TargetMetricKeys:
 
 
 _TARGET_KEYS = _TargetMetricKeys()
-_FIDEL_KEY = "epoch"
+_FIDEL_KEY = "epoch"  # this is not class var, because we wanna use dataclass for multiple fidelities
 _KEY_ORDER = ["alpha", "batch_size", "depth", "learning_rate_init", "width"]
-_DATA_DIR = os.path.join(DATA_DIR_NAME, "hpobench")
 _DATASET_NAMES = (
     "australian",
     "blood_transfusion",
@@ -46,11 +45,11 @@ class HPOBenchDatabase(AbstractHPOData):
     """Workaround to prevent dask from serializing the objective func"""
 
     _data_url = "https://ndownloader.figshare.com/files/30379005/"
-    _data_dir = _DATA_DIR
+    _data_dir = os.path.join(DATA_DIR_NAME, "hpobench")
 
     def __init__(self, dataset_name: str):
         self._benchdata_path = os.path.join(self._data_dir, f"{dataset_name}.pkl")
-        self._check_benchdata_availability()
+        self._validate()
         self._db = pickle.load(open(self._benchdata_path, "rb"))
 
     @property

@@ -22,8 +22,7 @@ class _TargetMetricKeys:
 
 
 _TARGET_KEYS = _TargetMetricKeys()
-_FIDEL_KEY = "epoch"
-_DATA_DIR = os.path.join(DATA_DIR_NAME, "lcbench")
+_FIDEL_KEY = "epoch"  # this is not class var, because we wanna use dataclass for multiple fidelities
 _DATASET_INFO = (
     ("kddcup09_appetency", "3945"),
     ("covertype", "7593"),
@@ -66,10 +65,10 @@ class LCBenchSurrogate(AbstractHPOData):
     """Workaround to prevent dask from serializing the objective func"""
 
     _data_url = "https://syncandshare.lrz.de/getlink/fiCMkzqj1bv1LfCUyvZKmLvd/"
-    _data_dir = _DATA_DIR
+    _data_dir = os.path.join(DATA_DIR_NAME, "lcbench")
 
     def __init__(self, dataset_id: str, target_metrics: list[str]):
-        self._check_benchdata_availability()
+        self._validate()
         self._dataset_id = dataset_id
         self._target_metrics = target_metrics[:]
         # active_session=False is necessary for parallel computing.

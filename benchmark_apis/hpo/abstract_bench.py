@@ -48,7 +48,7 @@ class AbstractBench(AbstractAPI):
         super()._validate_class_vars()
         for var_name in ["_MAX_EPOCH", "_N_DATASETS", "_TARGET_METRIC_KEYS"]:
             if not hasattr(cls, var_name):
-                raise ValueError(f"Child class of {cls.__name__} must define {var_name}.")
+                raise NotImplementedError(f"Child class of {cls.__name__} must define {var_name}.")
 
     def _validate_target_metrics(self) -> None:
         target_metrics = self._target_metrics

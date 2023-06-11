@@ -30,8 +30,7 @@ class _FidelKeys:
 
 _FIDEL_KEYS = _FidelKeys()
 _TARGET_KEYS = _TargetMetricKeys()
-_DATA_DIR = os.path.join(DATA_DIR_NAME, "jahs")
-_DATASET_NAMES = ["cifar10", "fashion_mnist", "colorectal_histology"]
+_DATASET_NAMES = ("cifar10", "fashion_mnist", "colorectal_histology")
 
 
 class JAHSBenchSurrogate(AbstractHPOData):
@@ -40,10 +39,10 @@ class JAHSBenchSurrogate(AbstractHPOData):
     _data_url = (
         "https://ml.informatik.uni-freiburg.de/research-artifacts/jahs_bench_201/v1.1.0/assembled_surrogates.tar"
     )
-    _data_dir = _DATA_DIR
+    _data_dir = os.path.join(DATA_DIR_NAME, "jahs")
 
     def __init__(self, dataset_name: str, target_metrics: list[str]):
-        self._check_benchdata_availability()
+        self._validate()
         self._target_metrics = target_metrics[:]
         _metrics = [getattr(_TARGET_KEYS, tm) for tm in self._target_metrics]
         metrics = list(set(_metrics + [_TARGET_KEYS.runtime]))
