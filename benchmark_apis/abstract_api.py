@@ -4,7 +4,7 @@ import os
 import warnings
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
-from typing import ClassVar, Optional, TypedDict
+from typing import Any, ClassVar, Optional, TypedDict
 
 import ConfigSpace as CS
 
@@ -99,6 +99,10 @@ class AbstractAPI(metaclass=ABCMeta):
         seed: int | None = None,
         benchdata: AbstractHPOData | None = None,
     ) -> ResultType:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _validate_config(self, *args: Any, **kwargs: Any) -> None:
         raise NotImplementedError
 
     @property

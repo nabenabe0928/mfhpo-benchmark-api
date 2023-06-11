@@ -4,10 +4,8 @@ import os
 import pickle
 from typing import ClassVar, Literal, TypedDict
 
-import ConfigSpace as CS
-
 from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType, _HPODataClassVars, _TargetMetricKeys
-from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES, _BenchClassVars, _FidelKeys
+from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, DISC_SPACES, _BenchClassVars, _FidelKeys
 
 import numpy as np
 
@@ -17,6 +15,7 @@ _TARGET_KEYS = _TargetMetricKeys(
     runtime="runtime",
     model_size="n_params",
 )
+_BENCH_NAME = "hpolib"
 _KEY_ORDER = [
     "activation_fn_1",
     "activation_fn_2",
@@ -47,7 +46,7 @@ class HPOLibDatabase(AbstractHPOData):
 
     _CONSTS = _HPODataClassVars(
         url="http://ml4aad.org/wp-content/uploads/2019/01/fcnet_tabular_benchmarks.tar.gz",
-        dir=os.path.join(DATA_DIR_NAME, "hpolib"),
+        dir=os.path.join(DATA_DIR_NAME, _BENCH_NAME),
     )
 
     def __init__(self, dataset_name: str):
@@ -107,7 +106,7 @@ class HPOLib(AbstractBench):
         max_epoch=100,
         n_datasets=len(_DATASET_NAMES),
         target_metric_keys=[k for k, v in _TARGET_KEYS.__dict__.items() if v is not None],
-        value_range=VALUE_RANGES["hpolib"],
+        disc_space=DISC_SPACES[_BENCH_NAME],
         fidel_keys=_FidelKeys(epoch="epoch"),
     )
 
@@ -160,7 +159,3 @@ class HPOLib(AbstractBench):
             output[RESULT_KEYS.model_size] = float(row[_TARGET_KEYS.model_size])  # type: ignore
 
         return output
-
-    @property
-    def config_space(self) -> CS.ConfigurationSpace:
-        return self._fetch_discrete_config_space()

@@ -25,6 +25,7 @@ _TARGET_KEYS = _TargetMetricKeys(
     loss="val_balanced_accuracy",
     runtime="time",
 )
+_BENCH_NAME = "lcbench"
 _DATASET_INFO = (
     ("kddcup09_appetency", "3945"),
     ("covertype", "7593"),
@@ -68,7 +69,7 @@ class LCBenchSurrogate(AbstractHPOData):
 
     _CONSTS = _HPODataClassVars(
         url="https://syncandshare.lrz.de/getlink/fiCMkzqj1bv1LfCUyvZKmLvd/",
-        dir=os.path.join(DATA_DIR_NAME, "lcbench"),
+        dir=os.path.join(DATA_DIR_NAME, _BENCH_NAME),
     )
 
     def __init__(self, dataset_id: str, target_metrics: list[str]):
@@ -76,13 +77,13 @@ class LCBenchSurrogate(AbstractHPOData):
         self._dataset_id = dataset_id
         self._target_metrics = target_metrics[:]
         # active_session=False is necessary for parallel computing.
-        self._surrogate = benchmark_set.BenchmarkSet("lcbench", instance=dataset_id, active_session=False)
+        self._surrogate = benchmark_set.BenchmarkSet(_BENCH_NAME, instance=dataset_id, active_session=False)
 
     @property
     def install_instruction(self) -> str:
         return (
-            f"\tAccess to {self._CONSTS.url} and download `lcbench.zip` from the website.\n\n"
-            f"After that, please unzip `lcbench.zip` in {self._CONSTS.dir}."
+            f"\tAccess to {self._CONSTS.url} and download `{_BENCH_NAME}.zip` from the website.\n\n"
+            f"After that, please unzip `{_BENCH_NAME}.zip` in {self._CONSTS.dir}."
         )
 
     def _check_benchdata_availability(self) -> None:

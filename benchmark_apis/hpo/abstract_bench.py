@@ -4,7 +4,7 @@ import json
 import os
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import ClassVar, Final
+from typing import ClassVar, Final, Literal, TypedDict
 
 import ConfigSpace as CS
 
@@ -17,19 +17,29 @@ class _FidelKeys:
     resol: str | None = None
 
 
+class _ContinuousSpaceParams(TypedDict):
+    type_: Literal["int", "float"]
+    lower: int | float
+    upper: int | float
+    log: bool
+
+
 @dataclass(frozen=True)
 class _BenchClassVars:
     max_epoch: int
     n_datasets: int
     target_metric_keys: list[str]
     fidel_keys: _FidelKeys
-    value_range: dict[str, list[int | float | str | bool]] | None = None
+    disc_space: dict[str, list[int | float | str | bool]] | None = None
+    cont_space: dict[str, _ContinuousSpaceParams] | None = None
 
 
 curdir = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR_NAME: Final[str] = os.path.join(os.environ["HOME"], "hpo_benchmarks")
-SEARCH_SPACE_PATH: Final[str] = os.path.join(curdir, "discrete_search_spaces.json")
-VALUE_RANGES: Final[dict[str, dict[str, list[int | float | str | bool]]]] = json.load(open(SEARCH_SPACE_PATH))
+DISC_SPACE_PATH: Final[str] = os.path.join(curdir, "discrete_search_spaces.json")
+CONT_SPACE_PATH: Final[str] = os.path.join(curdir, "continuous_search_spaces.json")
+DISC_SPACES: Final[dict[str, dict[str, list[int | float | str | bool]]]] = json.load(open(DISC_SPACE_PATH))
+CONT_SPACES: Final[dict[str, dict[str, _ContinuousSpaceParams]]] = json.load(open(CONT_SPACE_PATH))
 
 
 class AbstractBench(AbstractAPI):
@@ -109,20 +119,36 @@ class AbstractBench(AbstractAPI):
         assert ret is not None  # mypy redefinition
         return ret
 
-    def _fetch_discrete_config_space(self) -> CS.ConfigurationSpace:
-        if self._CONSTS.value_range is None:
-            raise ValueError("_VALUE_RANGE must be specified, but got None.")
+    def _fetch_continuous_hyperparameters(self) -> list[CS.hyperparameters.Hyperparameter]:
+        hyperparameters: list[CS.hyperparameters.Hyperparameter] = []
+        if self._CONSTS.cont_space is None:
+            return hyperparameters
 
+        for name, params in self._CONSTS.cont_space.items():
+            kwargs = dict(name=name, **params)
+            type_ = kwargs.pop("type_")
+            if type_ == "int":
+                hp = CS.UniformIntegerHyperparameter(**kwargs)
+            elif type_ == "float":
+                hp = CS.UniformFloatHyperparameter(**kwargs)
+            else:
+                raise TypeError(f"type_ of continuous space must be `int` or `float`, but got {type_}")
+
+            hyperparameters.append(hp)
+
+        return hyperparameters
+
+    def _fetch_discrete_hyperparameters(self) -> list[CS.hyperparameters.Hyperparameter]:
         config_space = CS.ConfigurationSpace()
-        config_space.add_hyperparameters(
-            [
-                CS.UniformIntegerHyperparameter(name=name, lower=0, upper=len(choices) - 1)
-                if not isinstance(choices[0], (str, bool))
-                else CS.CategoricalHyperparameter(name=name, choices=[str(i) for i in range(len(choices))])
-                for name, choices in self._CONSTS.value_range.items()
-            ]
-        )
-        return config_space
+        if self._CONSTS.disc_space is None:
+            return config_space
+
+        return [
+            CS.UniformIntegerHyperparameter(name=name, lower=0, upper=len(choices) - 1)
+            if not isinstance(choices[0], (str, bool))
+            else CS.CategoricalHyperparameter(name=name, choices=[str(i) for i in range(len(choices))])
+            for name, choices in self._CONSTS.disc_space.items()
+        ]
 
     @property
     def dataset_name_for_dir(self) -> str | None:
@@ -144,3 +170,10 @@ class AbstractBench(AbstractAPI):
     @property
     def fidel_keys(self) -> list[str]:
         return [k for k in self._CONSTS.fidel_keys.__dict__.values() if k is not None]
+
+    @property
+    def config_space(self) -> CS.ConfigurationSpace:
+        config_space = CS.ConfigurationSpace()
+        config_space.add_hyperparameters(self._fetch_discrete_hyperparameters())
+        config_space.add_hyperparameters(self._fetch_continuous_hyperparameters())
+        return config_space

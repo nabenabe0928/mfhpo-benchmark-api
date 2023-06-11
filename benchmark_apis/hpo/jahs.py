@@ -3,8 +3,6 @@ from __future__ import annotations
 import os
 from typing import Literal
 
-import ConfigSpace as CS
-
 from benchmark_apis.abstract_api import (
     AbstractHPOData,
     RESULT_KEYS,
@@ -13,7 +11,14 @@ from benchmark_apis.abstract_api import (
     _TargetMetricKeys,
     _warn_not_found_module,
 )
-from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES, _BenchClassVars, _FidelKeys
+from benchmark_apis.hpo.abstract_bench import (
+    AbstractBench,
+    CONT_SPACES,
+    DATA_DIR_NAME,
+    DISC_SPACES,
+    _BenchClassVars,
+    _FidelKeys,
+)
 
 try:
     import jahs_bench
@@ -26,6 +31,7 @@ _TARGET_KEYS = _TargetMetricKeys(
     runtime="runtime",
     model_size="size_MB",
 )
+_BENCH_NAME = "jahs"
 _DATASET_NAMES = ("cifar10", "fashion_mnist", "colorectal_histology")
 
 
@@ -34,7 +40,7 @@ class JAHSBenchSurrogate(AbstractHPOData):
 
     _CONSTS = _HPODataClassVars(
         url="https://ml.informatik.uni-freiburg.de/research-artifacts/jahs_bench_201/v1.1.0/assembled_surrogates.tar",
-        dir=os.path.join(DATA_DIR_NAME, "jahs"),
+        dir=os.path.join(DATA_DIR_NAME, _BENCH_NAME),
     )
 
     def __init__(self, dataset_name: str, target_metrics: list[str]):
@@ -108,7 +114,8 @@ class JAHSBench201(AbstractBench):
         max_epoch=200,
         n_datasets=len(_DATASET_NAMES),
         target_metric_keys=[k for k, v in _TARGET_KEYS.__dict__.items() if v is not None],
-        value_range=VALUE_RANGES["jahs"],
+        cont_space=CONT_SPACES[_BENCH_NAME],
+        disc_space=DISC_SPACES[_BENCH_NAME],
         fidel_keys=_FidelKeys(epoch="epoch", resol="Resolution"),
     )
 
@@ -158,21 +165,10 @@ class JAHSBench201(AbstractBench):
 
         _fidels = self.max_fidels
         _fidels.update(**fidels)
-        assert self._CONSTS.value_range is not None  # mypy redefinition
+        assert self._CONSTS.disc_space is not None  # mypy redefinition
         _eval_config = {
-            k: self._CONSTS.value_range[k][int(v)] if k in self._CONSTS.value_range else float(v)
+            k: self._CONSTS.disc_space[k][int(v)] if k in self._CONSTS.disc_space else float(v)
             for k, v in eval_config.items()
         }
         self._validate_config(eval_config=eval_config)
         return surrogate(eval_config=_eval_config, fidels=_fidels)
-
-    @property
-    def config_space(self) -> CS.ConfigurationSpace:
-        config_space = self._fetch_discrete_config_space()
-        config_space.add_hyperparameters(
-            [
-                CS.UniformFloatHyperparameter(name="LearningRate", lower=1e-3, upper=1.0, log=True),
-                CS.UniformFloatHyperparameter(name="WeightDecay", lower=1e-5, upper=1e-2, log=True),
-            ]
-        )
-        return config_space

@@ -4,10 +4,8 @@ import os
 import pickle
 from typing import ClassVar, Literal, TypedDict
 
-import ConfigSpace as CS
-
 from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType, _HPODataClassVars, _TargetMetricKeys
-from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES, _BenchClassVars, _FidelKeys
+from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, DISC_SPACES, _BenchClassVars, _FidelKeys
 
 
 _TARGET_KEYS = _TargetMetricKeys(
@@ -16,6 +14,7 @@ _TARGET_KEYS = _TargetMetricKeys(
     precision="precision",
     f1="f1",
 )
+_BENCH_NAME = "hpobench"
 _KEY_ORDER = ["alpha", "batch_size", "depth", "learning_rate_init", "width"]
 _DATASET_NAMES = (
     "australian",
@@ -41,7 +40,7 @@ class HPOBenchDatabase(AbstractHPOData):
 
     _CONSTS = _HPODataClassVars(
         url="https://ndownloader.figshare.com/files/30379005/",
-        dir=os.path.join(DATA_DIR_NAME, "hpobench"),
+        dir=os.path.join(DATA_DIR_NAME, _BENCH_NAME),
     )
 
     def __init__(self, dataset_name: str):
@@ -99,10 +98,9 @@ class HPOBench(AbstractBench):
         max_epoch=243,
         n_datasets=len(_DATASET_NAMES),
         target_metric_keys=[k for k, v in _TARGET_KEYS.__dict__.items() if v is not None],
-        value_range=VALUE_RANGES["hpobench"],
+        disc_space=DISC_SPACES[_BENCH_NAME],
         fidel_keys=_FidelKeys(epoch="epoch"),
     )
-    _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...]] = tuple("-".join(name.split("_")) for name in _DATASET_NAMES)
 
     # HPOBench specific constants
     _N_SEEDS: ClassVar[int] = 5
@@ -158,7 +156,3 @@ class HPOBench(AbstractBench):
             output[RESULT_KEYS.precision] = float(row[_TARGET_KEYS.precision][idx][fidel])  # type: ignore
 
         return output
-
-    @property
-    def config_space(self) -> CS.ConfigurationSpace:
-        return self._fetch_discrete_config_space()
