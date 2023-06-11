@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
 from typing import Literal
 
 import ConfigSpace as CS
 
-from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType, _warn_not_found_module
-from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES, _BenchClassVars
+from benchmark_apis.abstract_api import (
+    AbstractHPOData,
+    RESULT_KEYS,
+    ResultType,
+    _TargetMetricKeys,
+    _warn_not_found_module,
+)
+from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES, _BenchClassVars, _FidelKeys
 
 try:
     import jahs_bench
@@ -15,21 +20,11 @@ except ModuleNotFoundError:  # We cannot use jahs with smac
     _warn_not_found_module(bench_name="jahs")
 
 
-@dataclass(frozen=True)
-class _TargetMetricKeys:
-    loss: str = "valid-acc"
-    runtime: str = "runtime"
-    model_size: str = "size_MB"
-
-
-@dataclass(frozen=True)
-class _FidelKeys:
-    epoch: str = "epoch"
-    resol: str = "Resolution"
-
-
-_FIDEL_KEYS = _FidelKeys()
-_TARGET_KEYS = _TargetMetricKeys()
+_TARGET_KEYS = _TargetMetricKeys(
+    loss="valid-acc",
+    runtime="runtime",
+    model_size="size_MB",
+)
 _DATASET_NAMES = ("cifar10", "fashion_mnist", "colorectal_histology")
 
 
@@ -60,7 +55,7 @@ class JAHSBenchSurrogate(AbstractHPOData):
 
     def __call__(self, eval_config: dict[str, int | float | str | bool], fidels: dict[str, int | float]) -> ResultType:
         _fidels = fidels.copy()
-        nepochs = _fidels.pop(_FIDEL_KEYS.epoch)
+        nepochs = _fidels.pop("epoch")
 
         eval_config.update({"Optimizer": "SGD", **_fidels})  # type: ignore
         eval_config = {k: int(v) if k[:-1] == "Op" else v for k, v in eval_config.items()}
@@ -111,8 +106,9 @@ class JAHSBench201(AbstractBench):
     _CONSTS = _BenchClassVars(
         max_epoch=200,
         n_datasets=len(_DATASET_NAMES),
-        target_metric_keys=[k for k in _TARGET_KEYS.__dict__.keys()],
+        target_metric_keys=[k for k, v in _TARGET_KEYS.__dict__.items() if v is not None],
         value_range=VALUE_RANGES["jahs"],
+        fidel_keys=_FidelKeys(epoch="epoch", resol="Resolution"),
     )
 
     def __init__(
@@ -156,13 +152,11 @@ class JAHSBench201(AbstractBench):
         seed: int | None = None,
         benchdata: JAHSBenchSurrogate | None = None,
     ) -> ResultType:
-        if benchdata is None and self._benchdata is None:
-            raise ValueError("data must be provided when `keep_benchdata` is False")
+        surrogate = self._validate_benchdata(benchdata)
+        assert surrogate is not None and isinstance(surrogate, JAHSBenchSurrogate)  # mypy redefinition
 
         _fidels = self.max_fidels
         _fidels.update(**fidels)
-        surrogate = benchdata if self._benchdata is None else self._benchdata
-        assert surrogate is not None and isinstance(surrogate, JAHSBenchSurrogate)  # mypy redefinition
         assert self._CONSTS.value_range is not None  # mypy redefinition
         EPS = 1e-12
         _eval_config = {
@@ -185,15 +179,3 @@ class JAHSBench201(AbstractBench):
             ]
         )
         return config_space
-
-    @property
-    def min_fidels(self) -> dict[str, int | float]:
-        return {_FIDEL_KEYS.epoch: self._min_epoch, _FIDEL_KEYS.resol: self._min_resol}
-
-    @property
-    def max_fidels(self) -> dict[str, int | float]:
-        return {_FIDEL_KEYS.epoch: self._max_epoch, _FIDEL_KEYS.resol: self._max_resol}
-
-    @property
-    def fidel_keys(self) -> list[str]:
-        return list(_FIDEL_KEYS.__dict__.values())

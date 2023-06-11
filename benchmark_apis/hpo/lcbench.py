@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
 from typing import ClassVar, Literal
 
 import ConfigSpace as CS
 
-from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType, _warn_not_found_module
-from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, _BenchClassVars
+from benchmark_apis.abstract_api import (
+    AbstractHPOData,
+    RESULT_KEYS,
+    ResultType,
+    _TargetMetricKeys,
+    _warn_not_found_module,
+)
+from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, _BenchClassVars, _FidelKeys
 
 try:
     from yahpo_gym import benchmark_set, local_config
@@ -15,14 +20,10 @@ except ModuleNotFoundError:
     _warn_not_found_module(bench_name="lcbench")
 
 
-@dataclass(frozen=True)
-class _TargetMetricKeys:
-    loss: str = "val_balanced_accuracy"
-    runtime: str = "time"
-
-
-_TARGET_KEYS = _TargetMetricKeys()
-_FIDEL_KEY = "epoch"  # this is not class var, because we wanna use dataclass for multiple fidelities
+_TARGET_KEYS = _TargetMetricKeys(
+    loss="val_balanced_accuracy",
+    runtime="time",
+)
 _DATASET_INFO = (
     ("kddcup09_appetency", "3945"),
     ("covertype", "7593"),
@@ -89,7 +90,7 @@ class LCBenchSurrogate(AbstractHPOData):
     def __call__(self, eval_config: dict[str, int | float], fidel: int) -> ResultType:
         _eval_config: dict[str, int | float | str] = eval_config.copy()  # type: ignore
         _eval_config["OpenML_task_id"] = self._dataset_id
-        _eval_config[_FIDEL_KEY] = fidel
+        _eval_config["epoch"] = fidel
 
         output = self._surrogate.objective_function(_eval_config)[0]
         results: ResultType = {RESULT_KEYS.runtime: float(output[_TARGET_KEYS.runtime])}  # type: ignore
@@ -137,7 +138,8 @@ class LCBench(AbstractBench):
     _CONSTS = _BenchClassVars(
         max_epoch=54,
         n_datasets=len(_DATASET_INFO),
-        target_metric_keys=[k for k in _TARGET_KEYS.__dict__.keys()],
+        target_metric_keys=[k for k, v in _TARGET_KEYS.__dict__.items() if v is not None],
+        fidel_keys=_FidelKeys(epoch="epoch"),
     )
 
     # LCBench specific constant
@@ -183,12 +185,9 @@ class LCBench(AbstractBench):
         seed: int | None = None,
         benchdata: LCBenchSurrogate | None = None,
     ) -> ResultType:
-        if benchdata is None and self._benchdata is None:
-            raise ValueError("data must be provided when `keep_benchdata` is False")
-
-        surrogate = benchdata if self._benchdata is None else self._benchdata
+        surrogate = self._validate_benchdata(benchdata)
         assert surrogate is not None and isinstance(surrogate, LCBenchSurrogate)  # mypy redefinition
-        fidel = int(min(self._TRUE_MAX_EPOCH, fidels.get(_FIDEL_KEY, self._max_epoch)))
+        fidel = int(min(self._TRUE_MAX_EPOCH, fidels.get(self._CONSTS.fidel_keys.epoch, self._max_epoch)))
         self._validate_config(eval_config=eval_config)
         return surrogate(eval_config=eval_config, fidel=fidel)
 
@@ -207,16 +206,3 @@ class LCBench(AbstractBench):
             ]
         )
         return config_space
-
-    @property
-    def min_fidels(self) -> dict[str, int]:  # type: ignore[override]
-        return {_FIDEL_KEY: self._min_epoch}
-
-    @property
-    def max_fidels(self) -> dict[str, int]:  # type: ignore[override]
-        # in reality, the max_fidel is 52, but make it 54 only for computational convenience.
-        return {_FIDEL_KEY: self._max_epoch}
-
-    @property
-    def fidel_keys(self) -> list[str]:
-        return [_FIDEL_KEY]

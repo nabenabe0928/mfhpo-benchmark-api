@@ -2,25 +2,20 @@ from __future__ import annotations
 
 import os
 import pickle
-from dataclasses import dataclass
 from typing import ClassVar, Literal, TypedDict
 
 import ConfigSpace as CS
 
-from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType
-from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES, _BenchClassVars
+from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType, _TargetMetricKeys
+from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES, _BenchClassVars, _FidelKeys
 
 
-@dataclass(frozen=True)
-class _TargetMetricKeys:
-    loss: str = "bal_acc"
-    runtime: str = "runtime"
-    precision: str = "precision"
-    f1: str = "f1"
-
-
-_TARGET_KEYS = _TargetMetricKeys()
-_FIDEL_KEY = "epoch"  # this is not class var, because we wanna use dataclass for multiple fidelities
+_TARGET_KEYS = _TargetMetricKeys(
+    loss="bal_acc",
+    runtime="runtime",
+    precision="precision",
+    f1="f1",
+)
 _KEY_ORDER = ["alpha", "batch_size", "depth", "learning_rate_init", "width"]
 _DATASET_NAMES = (
     "australian",
@@ -101,8 +96,9 @@ class HPOBench(AbstractBench):
     _CONSTS = _BenchClassVars(
         max_epoch=243,
         n_datasets=len(_DATASET_NAMES),
-        target_metric_keys=[k for k in _TARGET_KEYS.__dict__.keys()],
+        target_metric_keys=[k for k, v in _TARGET_KEYS.__dict__.items() if v is not None],
         value_range=VALUE_RANGES["hpobench"],
+        fidel_keys=_FidelKeys(epoch="epoch"),
     )
     _DATASET_NAMES_FOR_DIR: ClassVar[tuple[str, ...]] = tuple("-".join(name.split("_")) for name in _DATASET_NAMES)
 
@@ -139,13 +135,11 @@ class HPOBench(AbstractBench):
         seed: int | None = None,
         benchdata: HPOBenchDatabase | None = None,
     ) -> ResultType:
-        fidel = int(fidels.get(_FIDEL_KEY, self._max_epoch))
+        fidel = int(fidels.get(self._CONSTS.fidel_keys.epoch, self._max_epoch))
         if fidel not in self._EPOCHS:
             raise ValueError(f"fidel for {self.__class__.__name__} must be in {self._EPOCHS}, but got {fidel}")
-        if benchdata is None and self._benchdata is None:
-            raise ValueError("data must be provided when `keep_benchdata` is False")
 
-        db = benchdata if self._benchdata is None else self._benchdata
+        db = self._validate_benchdata(benchdata)
         assert db is not None and isinstance(db, HPOBenchDatabase)  # mypy redefinition
         idx = seed % self._N_SEEDS if seed is not None else self._rng.randint(self._N_SEEDS)
         config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])
@@ -166,15 +160,3 @@ class HPOBench(AbstractBench):
     @property
     def config_space(self) -> CS.ConfigurationSpace:
         return self._fetch_discrete_config_space()
-
-    @property
-    def min_fidels(self) -> dict[str, int]:  # type: ignore[override]
-        return {_FIDEL_KEY: self._min_epoch}
-
-    @property
-    def max_fidels(self) -> dict[str, int]:  # type: ignore[override]
-        return {_FIDEL_KEY: self._max_epoch}
-
-    @property
-    def fidel_keys(self) -> list[str]:
-        return [_FIDEL_KEY]

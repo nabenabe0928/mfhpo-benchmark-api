@@ -2,26 +2,21 @@ from __future__ import annotations
 
 import os
 import pickle
-from dataclasses import dataclass
 from typing import ClassVar, Literal, TypedDict
 
 import ConfigSpace as CS
 
-from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType
-from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES, _BenchClassVars
+from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType, _TargetMetricKeys
+from benchmark_apis.hpo.abstract_bench import AbstractBench, DATA_DIR_NAME, VALUE_RANGES, _BenchClassVars, _FidelKeys
 
 import numpy as np
 
 
-@dataclass(frozen=True)
-class _TargetMetricKeys:
-    loss: str = "valid_mse"
-    runtime: str = "runtime"
-    model_size: str = "n_params"
-
-
-_TARGET_KEYS = _TargetMetricKeys()
-_FIDEL_KEY = "epoch"  # this is not class var, because we wanna use dataclass for multiple fidelities
+_TARGET_KEYS = _TargetMetricKeys(
+    loss="valid_mse",
+    runtime="runtime",
+    model_size="n_params",
+)
 _KEY_ORDER = [
     "activation_fn_1",
     "activation_fn_2",
@@ -109,8 +104,9 @@ class HPOLib(AbstractBench):
     _CONSTS = _BenchClassVars(
         max_epoch=100,
         n_datasets=len(_DATASET_NAMES),
-        target_metric_keys=[k for k in _TARGET_KEYS.__dict__.keys()],
+        target_metric_keys=[k for k, v in _TARGET_KEYS.__dict__.items() if v is not None],
         value_range=VALUE_RANGES["hpolib"],
+        fidel_keys=_FidelKeys(epoch="epoch"),
     )
 
     # HPOLib specific constant
@@ -145,18 +141,16 @@ class HPOLib(AbstractBench):
         seed: int | None = None,
         benchdata: HPOLibDatabase | None = None,
     ) -> ResultType:
-        if benchdata is None and self._benchdata is None:
-            raise ValueError("data must be provided when `keep_benchdata` is False")
-
-        db = benchdata if self._benchdata is None else self._benchdata
+        db = self._validate_benchdata(benchdata)
         assert db is not None and isinstance(db, HPOLibDatabase)  # mypy redefinition
-        fidel = int(fidels.get(_FIDEL_KEY, self._max_epoch))
+        epoch_key = self._CONSTS.fidel_keys.epoch
+        fidel = int(fidels.get(epoch_key, self._max_epoch))
         idx = seed % self._N_SEEDS if seed is not None else self._rng.randint(self._N_SEEDS)
         config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])
 
         row: RowDataType = db[config_id]
         full_runtime = row[_TARGET_KEYS.runtime][idx]  # type: ignore
-        output: ResultType = {RESULT_KEYS.runtime: full_runtime * fidel / self.max_fidels[_FIDEL_KEY]}  # type: ignore
+        output: ResultType = {RESULT_KEYS.runtime: full_runtime * fidel / self.max_fidels[epoch_key]}  # type: ignore
 
         if RESULT_KEYS.loss in self._target_metrics:
             output[RESULT_KEYS.loss] = np.log(row[_TARGET_KEYS.loss][idx][fidel])  # type: ignore
@@ -168,15 +162,3 @@ class HPOLib(AbstractBench):
     @property
     def config_space(self) -> CS.ConfigurationSpace:
         return self._fetch_discrete_config_space()
-
-    @property
-    def min_fidels(self) -> dict[str, int]:  # type: ignore[override]
-        return {_FIDEL_KEY: self._min_epoch}
-
-    @property
-    def max_fidels(self) -> dict[str, int]:  # type: ignore[override]
-        return {_FIDEL_KEY: self._max_epoch}
-
-    @property
-    def fidel_keys(self) -> list[str]:
-        return [_FIDEL_KEY]

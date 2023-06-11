@@ -27,6 +27,15 @@ class _ResultKeys:
     precision: str = "precision"
 
 
+@dataclass(frozen=True)
+class _TargetMetricKeys:
+    runtime: str
+    loss: str | None = None
+    model_size: str | None = None
+    f1: str | None = None
+    precision: str | None = None
+
+
 class ResultType(TypedDict):
     runtime: float
     loss: Optional[float]

@@ -12,10 +12,17 @@ from benchmark_apis.abstract_api import AbstractAPI, AbstractHPOData
 
 
 @dataclass(frozen=True)
+class _FidelKeys:
+    epoch: str
+    resol: str | None = None
+
+
+@dataclass(frozen=True)
 class _BenchClassVars:
     max_epoch: int
     n_datasets: int
     target_metric_keys: list[str]
+    fidel_keys: _FidelKeys
     value_range: dict[str, list[int | float | str | bool]] | None = None
 
 
@@ -69,6 +76,14 @@ class AbstractBench(AbstractAPI):
         if min_epoch >= max_epoch:
             raise ValueError(f"min_epoch < max_epoch must hold, but got {min_epoch=} and {max_epoch=}")
 
+    def _validate_benchdata(self, benchdata: AbstractHPOData | None) -> AbstractHPOData:
+        if benchdata is None and self._benchdata is None:
+            raise ValueError("data must be provided when `keep_benchdata` is False")
+
+        ret = benchdata if self._benchdata is None else self._benchdata
+        assert ret is not None  # mypy redefinition
+        return ret
+
     def _fetch_discrete_config_space(self) -> CS.ConfigurationSpace:
         if self._CONSTS.value_range is None:
             raise ValueError("_VALUE_RANGE must be specified, but got None.")
@@ -95,3 +110,16 @@ class AbstractBench(AbstractAPI):
     @abstractmethod
     def get_benchdata(self) -> AbstractHPOData:
         raise NotImplementedError
+
+    @property
+    def min_fidels(self) -> dict[str, int | float]:
+        # eta ** S <= R/r < eta ** (S + 1) to have S rungs.
+        return {v: getattr(self, f"_min_{k}") for k, v in self._CONSTS.fidel_keys.__dict__.items() if v is not None}
+
+    @property
+    def max_fidels(self) -> dict[str, int | float]:
+        return {v: getattr(self, f"_max_{k}") for k, v in self._CONSTS.fidel_keys.__dict__.items() if v is not None}
+
+    @property
+    def fidel_keys(self) -> list[str]:
+        return [k for k in self._CONSTS.fidel_keys.__dict__.values() if k is not None]
