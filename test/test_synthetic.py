@@ -13,6 +13,7 @@ def test_branin():
         assert "runtime" in output.keys()
         assert "loss" in output.keys()
         assert bench.fidel_keys == ["z0"]
+        assert bench.dataset_name_for_dir is None
 
     bench = MFBranin(fidel_dim=1, min_fidel=20, max_fidel=50)
     assert bench.min_fidels["z0"] == 20
@@ -29,6 +30,7 @@ def test_hartmann(dim):
         assert "runtime" in output.keys()
         assert "loss" in output.keys()
         assert bench.fidel_keys == ["z0"]
+        assert bench.dataset_name_for_dir is None
 
     bench = MFHartmann(fidel_dim=1, min_fidel=20, max_fidel=50)
     assert bench.min_fidels["z0"] == 20

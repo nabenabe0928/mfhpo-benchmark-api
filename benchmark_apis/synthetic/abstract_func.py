@@ -94,9 +94,10 @@ class MFAbstractFunc(AbstractAPI):
         self,
         eval_config: dict[str, float],
         *,
-        fidels: dict[str, int] = {},
+        fidels: dict[str, int] | None = None,
         seed: int | None = None,
     ) -> ResultType:
+        fidels = fidels if fidels is not None else {}
         if len(fidels) != self.fidel_dim:
             raise ValueError(f"The provided fidelity dimension is {self.fidel_dim}, " f"but got {fidels}")
 

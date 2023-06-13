@@ -124,7 +124,7 @@ class JAHSBench201(AbstractBench):
         self,
         eval_config: dict[str, int | float | str | bool],
         *,
-        fidels: dict[str, int | float] = {},
+        fidels: dict[str, int | float] | None = None,
         seed: int | None = None,
         benchdata: JAHSBenchSurrogate | None = None,
     ) -> ResultType:

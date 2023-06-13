@@ -111,12 +111,12 @@ class HPOBench(AbstractBench):
         self,
         eval_config: dict[str, int | str],
         *,
-        fidels: dict[str, int] = {},
+        fidels: dict[str, int] | None = None,
         seed: int | None = None,
         benchdata: HPOBenchTabular | None = None,
     ) -> ResultType:
         epoch_key = self._CONSTS.fidel_keys.epoch
-        fidel = int(fidels.get(epoch_key, self._max_fidels[epoch_key]))
+        fidel = int(self._validate_fidels(fidels)[epoch_key])
         if fidel not in self._EPOCHS:
             raise ValueError(f"fidel for {self.__class__.__name__} must be in {self._EPOCHS}, but got {fidel}")
 

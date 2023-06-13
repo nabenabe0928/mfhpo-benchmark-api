@@ -81,18 +81,20 @@ class AbstractBench(AbstractAPI):
         self,
         dataset_id: int,
         seed: int | None = None,
-        fidel_value_ranges: dict[str, tuple[int | float, int | float]] = {},
-        target_metrics: list[str] = [RESULT_KEYS.loss],
+        fidel_value_ranges: dict[str, tuple[int | float, int | float]] | None = None,
+        target_metrics: list[str] | None = None,
         keep_benchdata: bool = True,
     ):
         super().__init__(seed=seed)
-        self._target_metrics = target_metrics[:]
+        self._target_metrics = target_metrics[:] if target_metrics is not None else [RESULT_KEYS.loss]
         self._dataset_id = dataset_id
         self._benchdata = self.get_benchdata() if keep_benchdata else None
         self._config_space = self.config_space
         self._fidel_keys = self.fidel_keys
         self._fidel_value_ranges: dict[str, _ValueRange]
-        self._validate_fidel_value_ranges(fidel_value_ranges=fidel_value_ranges)
+        self._validate_fidel_value_ranges(
+            fidel_value_ranges=fidel_value_ranges if fidel_value_ranges is not None else {}
+        )
 
         self._min_fidels = self.min_fidels
         self._max_fidels = self.max_fidels
@@ -137,10 +139,10 @@ class AbstractBench(AbstractAPI):
             raise NotImplementedError(f"Child class of {cls.__name__} must define _CONSTS.")
 
     def _validate_inputs(
-        self, eval_config: dict[str, int | float | str | bool], fidels: dict[str, int | float]
+        self, eval_config: dict[str, int | float | str | bool], fidels: dict[str, int | float] | None
     ) -> tuple[dict[str, int | float | str | bool], dict[str, int | float]]:
         _eval_config = self._validate_config(eval_config=eval_config.copy())
-        _fidels = self._validate_fidels(fidels=fidels.copy())
+        _fidels = self._validate_fidels(fidels=fidels)
         return _eval_config, _fidels
 
     def _validate_config(self, eval_config: dict[str, int | float | str | bool]) -> dict[str, int | float | str | bool]:
@@ -165,18 +167,20 @@ class AbstractBench(AbstractAPI):
 
         return eval_config
 
-    def _validate_fidels(self, fidels: dict[str, int | float]) -> dict[str, int | float]:
+    def _validate_fidels(self, fidels: dict[str, int | float] | None) -> dict[str, int | float]:
+        fidels = fidels if fidels is not None else {}
+        _fidels = fidels.copy()
         for fidel_key, value_range in self._fidel_value_ranges.items():
             lower, upper = value_range.lower, value_range.upper
-            if fidel_key not in fidels:
-                fidels[fidel_key] = self._max_fidels[fidel_key]
+            if fidel_key not in _fidels:
+                _fidels[fidel_key] = self._max_fidels[fidel_key]
                 continue
 
-            fidel_val = fidels[fidel_key]
+            fidel_val = _fidels[fidel_key]
             if not (lower <= fidel_val <= upper):
                 raise ValueError(f"{fidel_key} must be in [{lower}, {upper}], but got {fidel_val}.")
 
-        return fidels
+        return _fidels
 
     def _validate_target_metrics(self) -> None:
         target_metrics = self._target_metrics

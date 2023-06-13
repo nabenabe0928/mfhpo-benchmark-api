@@ -31,6 +31,8 @@ def test_jahs(target_metrics):
         output = bench(bench.config_space.sample_configuration().get_dictionary())
         assert set(target_metrics + ["runtime"]) == set(output.keys())
         assert bench.fidel_keys == ["epoch", "Resolution"]
+        assert "_" not in bench.dataset_name_for_dir
+        bench(bench.config_space.sample_configuration().get_dictionary(), fidels={"epoch": 100, "Resolution": 0.5})
 
     bench = JAHSBench201(
         dataset_id=0, fidel_value_ranges={"epoch": (10, 30), "Resolution": (0.1, 0.9)}, keep_benchdata=False
@@ -66,9 +68,29 @@ def test_jahs_invalid_input():
         JAHSBench201(dataset_id=0, fidel_value_ranges={"epoch": (1, 1000)}, keep_benchdata=False)
     with pytest.raises(ValueError, match=r"All elements*"):
         JAHSBench201(dataset_id=0, target_metrics=["dummy"], keep_benchdata=False)
+    with pytest.raises(KeyError, match=r"Keys in fidel_value_ranges must be in*"):
+        JAHSBench201(dataset_id=0, fidel_value_ranges={"dummy": (10, 30)}, keep_benchdata=False)
     with pytest.raises(ValueError, match=r"data must be provided*"):
         bench = JAHSBench201(dataset_id=0, keep_benchdata=False)
         bench(eval_config={})
+
+    bench = JAHSBench201(dataset_id=0, keep_benchdata=True)
+    config = bench.config_space.sample_configuration().get_dictionary()
+    with pytest.raises(ValueError, match=r"epoch must be in \[*"):
+        bench(eval_config=config, fidels={"epoch": 1000})
+    with pytest.raises(ValueError, match=r"epoch must be in \[*"):
+        bench(eval_config=config, fidels={"epoch": 0})
+    with pytest.raises(ValueError, match=r"Resolution must be in \[*"):
+        bench(eval_config=config, fidels={"Resolution": -0.1})
+    with pytest.raises(ValueError, match=r"Resolution must be in \[*"):
+        bench(eval_config=config, fidels={"Resolution": 1.1})
+    with pytest.raises(ValueError, match=r"Op1 must be in \('*"):
+        config["Op1"] = "9"
+        bench(config)
+    config["Op1"] = "0"
+    with pytest.raises(ValueError, match=r"W must be in \[lb=*"):
+        config["W"] = 1000
+        bench(config)
 
 
 @unittest.skipIf(not IS_LOCAL, "Data is too heavy to prepare on the GitHub server")
@@ -87,6 +109,7 @@ def test_lcbench(target_metrics):
         output = bench(bench.config_space.sample_configuration().get_dictionary())
         assert set(target_metrics + ["runtime"]) == set(output.keys())
         assert bench.fidel_keys == ["epoch"]
+        assert "_" not in bench.dataset_name_for_dir
 
     bench = LCBench(dataset_id=0, fidel_value_ranges={"epoch": (10, 30)}, keep_benchdata=False)
     assert bench.min_fidels["epoch"] == 10
@@ -112,9 +135,21 @@ def test_lcbench_invalid_input():
         LCBench(dataset_id=0, fidel_value_ranges={"epoch": (1, 1000)}, keep_benchdata=False)
     with pytest.raises(ValueError, match=r"All elements*"):
         LCBench(dataset_id=0, target_metrics=["dummy"], keep_benchdata=False)
+    with pytest.raises(KeyError, match=r"Keys in fidel_value_ranges must be in*"):
+        LCBench(dataset_id=0, fidel_value_ranges={"dummy": (10, 30)}, keep_benchdata=False)
     with pytest.raises(ValueError, match=r"data must be provided*"):
         bench = LCBench(dataset_id=0, keep_benchdata=False)
         bench(eval_config={})
+
+    bench = LCBench(dataset_id=0, keep_benchdata=True)
+    config = bench.config_space.sample_configuration().get_dictionary()
+    with pytest.raises(ValueError, match=r"epoch must be in \[*"):
+        bench(eval_config=config, fidels={"epoch": 1000})
+    with pytest.raises(ValueError, match=r"epoch must be in \[*"):
+        bench(eval_config=config, fidels={"epoch": 0})
+    with pytest.raises(ValueError, match=r"batch_size must be in \[lb=*"):
+        config["batch_size"] = 1000
+        bench(config)
 
 
 @unittest.skipIf(not IS_LOCAL, "Data is too heavy to prepare on the GitHub server")
@@ -137,6 +172,7 @@ def test_hpolib(target_metrics):
         output = bench(bench.config_space.sample_configuration().get_dictionary())
         assert set(target_metrics + ["runtime"]) == set(output.keys())
         assert bench.fidel_keys == ["epoch"]
+        assert "_" not in bench.dataset_name_for_dir
 
     bench = HPOLib(dataset_id=0, fidel_value_ranges={"epoch": (10, 30)})
     assert bench.min_fidels["epoch"] == 10
@@ -162,9 +198,26 @@ def test_hpolib_invalid_input():
         HPOLib(dataset_id=0, fidel_value_ranges={"epoch": (1, 1000)}, keep_benchdata=False)
     with pytest.raises(ValueError, match=r"All elements*"):
         HPOLib(dataset_id=0, target_metrics=["dummy"], keep_benchdata=False)
+    with pytest.raises(KeyError, match=r"Keys in fidel_value_ranges must be in*"):
+        HPOLib(dataset_id=0, fidel_value_ranges={"dummy": (10, 30)}, keep_benchdata=False)
     with pytest.raises(ValueError, match=r"data must be provided*"):
         bench = HPOLib(dataset_id=0, keep_benchdata=False)
         bench(eval_config={})
+
+    bench = HPOLib(dataset_id=0, keep_benchdata=True)
+    config = bench.config_space.sample_configuration().get_dictionary()
+    with pytest.raises(ValueError, match=r"epoch must be in \[*"):
+        bench(eval_config=config, fidels={"epoch": 1000})
+    with pytest.raises(ValueError, match=r"epoch must be in \[*"):
+        bench(eval_config=config, fidels={"epoch": 0})
+    with pytest.raises(KeyError):
+        config["activation_fn_1"] = "90000"
+        bench(config)
+
+    config["activation_fn_1"] = "0"
+    with pytest.raises(KeyError):
+        config["batch_size"] = 9
+        bench(config)
 
 
 @unittest.skipIf(not IS_LOCAL, "Data is too heavy to prepare on the GitHub server")
@@ -195,6 +248,7 @@ def test_hpobench(target_metrics):
         output = bench(bench.config_space.sample_configuration().get_dictionary())
         assert set(target_metrics + ["runtime"]) == set(output.keys())
         assert bench.fidel_keys == ["epoch"]
+        assert "_" not in bench.dataset_name_for_dir
 
     bench = HPOBench(dataset_id=0, fidel_value_ranges={"epoch": (3, 81)})
     assert bench.min_fidels["epoch"] == 3
@@ -224,9 +278,21 @@ def test_hpobench_invalid_input():
     with pytest.raises(ValueError, match=r"data must be provided*"):
         bench = HPOBench(dataset_id=0, keep_benchdata=False)
         bench(eval_config={})
+    with pytest.raises(KeyError, match=r"Keys in fidel_value_ranges must be in*"):
+        HPOBench(dataset_id=0, fidel_value_ranges={"dummy": (10, 30)}, keep_benchdata=False)
     with pytest.raises(ValueError, match=r"fidel for*"):
         bench = HPOBench(dataset_id=0, keep_benchdata=False)
         bench(eval_config=bench.config_space.sample_configuration().get_dictionary(), fidels={"epoch": 50})
+
+    bench = HPOBench(dataset_id=0, fidel_value_ranges={"epoch": (9, 81)}, keep_benchdata=True)
+    config = bench.config_space.sample_configuration().get_dictionary()
+    with pytest.raises(ValueError, match=r"epoch must be in \[*"):
+        bench(eval_config=config, fidels={"epoch": 243})
+    with pytest.raises(ValueError, match=r"epoch must be in \[*"):
+        bench(eval_config=config, fidels={"epoch": 3})
+    with pytest.raises(KeyError):
+        config["depth"] = 9
+        bench(config)
 
 
 if __name__ == "__main__":

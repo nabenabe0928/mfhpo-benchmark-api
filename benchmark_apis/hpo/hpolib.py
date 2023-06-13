@@ -123,14 +123,14 @@ class HPOLib(AbstractBench):
         self,
         eval_config: dict[str, int],
         *,
-        fidels: dict[str, int] = {},
+        fidels: dict[str, int] | None = None,
         seed: int | None = None,
         benchdata: HPOLibTabular | None = None,
     ) -> ResultType:
         db = self._validate_benchdata(benchdata)
         assert db is not None and isinstance(db, HPOLibTabular)  # mypy redefinition
         epoch_key = self._CONSTS.fidel_keys.epoch
-        fidel = int(fidels.get(epoch_key, self._max_fidels[epoch_key]))
+        fidel = int(self._validate_fidels(fidels)[epoch_key])
         idx = seed % self._N_SEEDS if seed is not None else self._rng.randint(self._N_SEEDS)
         config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])
 

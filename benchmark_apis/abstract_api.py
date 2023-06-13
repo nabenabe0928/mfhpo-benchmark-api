@@ -103,7 +103,7 @@ class AbstractAPI(metaclass=ABCMeta):
         self,
         eval_config: dict[str, int | float | str | bool],
         *,
-        fidels: dict[str, int | float] = {},
+        fidels: dict[str, int | float] | None = None,
         seed: int | None = None,
         benchdata: AbstractHPOData | None = None,
     ) -> ResultType:

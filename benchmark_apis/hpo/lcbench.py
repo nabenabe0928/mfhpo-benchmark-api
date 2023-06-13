@@ -137,7 +137,7 @@ class LCBench(AbstractBench):
         self,
         eval_config: dict[str, int | float],
         *,
-        fidels: dict[str, int] = {},
+        fidels: dict[str, int] | None = None,
         seed: int | None = None,
         benchdata: LCBenchSurrogate | None = None,
     ) -> ResultType:
