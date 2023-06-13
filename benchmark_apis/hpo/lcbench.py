@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, ClassVar, Literal
+from typing import Any, ClassVar
 
 from benchmark_apis.abstract_api import (
     AbstractHPOData,
@@ -31,8 +31,9 @@ except ModuleNotFoundError:
 _TARGET_KEYS = _TargetMetricKeys(loss="val_balanced_accuracy", runtime="time")
 _BENCH_NAME = "lcbench"
 curdir = os.path.dirname(os.path.abspath(__file__))
+_DATASET_NAMES = DATASET_NAMES[_BENCH_NAME]
 DATASET_IDS: dict[str, str] = json.load(open(os.path.join(curdir, "lcbench_dataset_ids.json")))
-_DATASET_INFO = tuple((name, DATASET_IDS[name]) for name in DATASET_NAMES[_BENCH_NAME])
+_DATASET_INFO = tuple((name, DATASET_IDS[name]) for name in _DATASET_NAMES)
 
 
 class LCBenchSurrogate(AbstractHPOData):
@@ -92,10 +93,10 @@ class LCBench(AbstractBench):
         target_metrics (list[str]):
             The target metrics to return.
             Must be in ["loss", "runtime", "model_size"].
-        min_epoch (int):
-            The minimum epoch of the training of each neural networks to be used during the optimization.
-        max_epoch (int):
-            The maximum epoch of the training of each neural networks to be used during the optimization.
+        fidel_value_ranges (dict[str, tuple[int | float, int | float]]):
+            The minimum and maximum values for each fidelity values.
+            The keys must be the fidelity names used in each benchmark and each tuple takes lower and upper bounds
+            of each fidelity value.
         keep_benchdata (bool):
             Whether to keep the benchmark data in each instance.
             When True, serialization will happen in case of parallel optimization.
@@ -117,8 +118,8 @@ class LCBench(AbstractBench):
     """
 
     _CONSTS = _BenchClassVars(
-        max_epoch=54,
-        n_datasets=len(_DATASET_INFO),
+        dataset_names=_DATASET_NAMES,
+        n_datasets=len(_DATASET_NAMES),
         target_metric_keys=[k for k, v in _TARGET_KEYS.__dict__.items() if v is not None],
         cont_space=CONT_SPACES[_BENCH_NAME],
         fidel_space=FIDEL_SPACES[_BENCH_NAME],
@@ -128,25 +129,9 @@ class LCBench(AbstractBench):
     # LCBench specific constant
     _TRUE_MAX_EPOCH: ClassVar[int] = 52
 
-    def __init__(
-        self,
-        dataset_id: int,
-        seed: int | None = None,  # surrogate is not stochastic
-        target_metrics: list[Literal["loss", "runtime"]] = [RESULT_KEYS.loss],  # type: ignore[list-item]
-        fidel_value_ranges: dict[str, tuple[int | float, int | float]] = {"epoch": (6, 54)},
-        keep_benchdata: bool = True,
-    ):
-        dataset_name, self._dataset_id = _DATASET_INFO[dataset_id]
-        super().__init__(
-            seed=seed,
-            fidel_value_ranges=fidel_value_ranges,
-            target_metrics=target_metrics[:],  # type: ignore[arg-type]
-            dataset_name=dataset_name,
-            keep_benchdata=keep_benchdata,
-        )
-
     def get_benchdata(self) -> LCBenchSurrogate:
-        return LCBenchSurrogate(dataset_id=self._dataset_id, target_metrics=self._target_metrics)
+        _, dataset_id = _DATASET_INFO[self._dataset_id]
+        return LCBenchSurrogate(dataset_id=dataset_id, target_metrics=self._target_metrics)
 
     def __call__(  # type: ignore[override]
         self,

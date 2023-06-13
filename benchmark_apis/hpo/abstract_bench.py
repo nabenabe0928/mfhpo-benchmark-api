@@ -8,7 +8,7 @@ from typing import ClassVar, Final, Literal, TypedDict
 
 import ConfigSpace as CS
 
-from benchmark_apis.abstract_api import AbstractAPI, AbstractHPOData
+from benchmark_apis.abstract_api import AbstractAPI, AbstractHPOData, RESULT_KEYS
 
 
 @dataclass(frozen=True)
@@ -44,7 +44,7 @@ class _ContinuousSpaceParams(TypedDict):
 
 @dataclass(frozen=True)
 class _BenchClassVars:
-    max_epoch: int
+    dataset_names: list[str]
     n_datasets: int
     target_metric_keys: list[str]
     fidel_keys: _FidelKeys
@@ -79,15 +79,15 @@ class AbstractBench(AbstractAPI):
 
     def __init__(
         self,
-        seed: int | None,
-        fidel_value_ranges: dict[str, tuple[int | float, int | float]],
-        target_metrics: list[str],
-        dataset_name: str,
-        keep_benchdata: bool,
+        dataset_id: int,
+        seed: int | None = None,
+        fidel_value_ranges: dict[str, tuple[int | float, int | float]] = {},
+        target_metrics: list[str] = [RESULT_KEYS.loss],
+        keep_benchdata: bool = True,
     ):
         super().__init__(seed=seed)
         self._target_metrics = target_metrics[:]
-        self._dataset_name = dataset_name
+        self._dataset_id = dataset_id
         self._benchdata = self.get_benchdata() if keep_benchdata else None
         self._config_space = self.config_space
         self._fidel_keys = self.fidel_keys
@@ -230,7 +230,7 @@ class AbstractBench(AbstractAPI):
 
     @property
     def dataset_name(self) -> str:
-        return self._dataset_name
+        return self._CONSTS.dataset_names[self._dataset_id]
 
     @property
     def min_fidels(self) -> dict[str, int | float]:

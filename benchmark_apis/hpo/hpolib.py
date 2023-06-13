@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import pickle
-from typing import ClassVar, Literal, TypedDict
+from typing import ClassVar, TypedDict
 
 from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType, _HPODataClassVars, _TargetMetricKeys
 from benchmark_apis.hpo.abstract_bench import (
@@ -83,10 +83,10 @@ class HPOLib(AbstractBench):
         target_metrics (list[Literal["loss", "runtime", "model_size"]]):
             The target metrics to return.
             Must be in ["loss", "runtime", "model_size"].
-        min_epoch (int):
-            The minimum epoch of the training of each neural networks to be used during the optimization.
-        max_epoch (int):
-            The maximum epoch of the training of each neural networks to be used during the optimization.
+        fidel_value_ranges (dict[str, tuple[int | float, int | float]]):
+            The minimum and maximum values for each fidelity values.
+            The keys must be the fidelity names used in each benchmark and each tuple takes lower and upper bounds
+            of each fidelity value.
         keep_benchdata (bool):
             Whether to keep the benchmark data in each instance.
             When True, serialization will happen in case of parallel optimization.
@@ -105,7 +105,7 @@ class HPOLib(AbstractBench):
     """
 
     _CONSTS = _BenchClassVars(
-        max_epoch=100,
+        dataset_names=_DATASET_NAMES,
         n_datasets=len(_DATASET_NAMES),
         target_metric_keys=[k for k, v in _TARGET_KEYS.__dict__.items() if v is not None],
         disc_space=DISC_SPACES[_BENCH_NAME],
@@ -115,22 +115,6 @@ class HPOLib(AbstractBench):
 
     # HPOLib specific constant
     _N_SEEDS: ClassVar[int] = 4
-
-    def __init__(
-        self,
-        dataset_id: int,
-        seed: int | None = None,
-        target_metrics: list[Literal["loss", "runtime", "model_size"]] = [RESULT_KEYS.loss],  # type: ignore[list-item]
-        fidel_value_ranges: dict[str, tuple[int | float, int | float]] = {"epoch": (11, 100)},
-        keep_benchdata: bool = True,
-    ):
-        super().__init__(
-            seed=seed,
-            fidel_value_ranges=fidel_value_ranges,
-            target_metrics=target_metrics[:],  # type: ignore[arg-type]
-            dataset_name=_DATASET_NAMES[dataset_id],
-            keep_benchdata=keep_benchdata,
-        )
 
     def get_benchdata(self) -> HPOLibTabular:
         return HPOLibTabular(self.dataset_name)

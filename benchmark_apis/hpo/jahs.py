@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Literal
+from typing import Any
 
 from benchmark_apis.abstract_api import (
     AbstractHPOData,
@@ -89,14 +89,10 @@ class JAHSBench201(AbstractBench):
         target_metrics (list[str]):
             The target metrics to return.
             Must be in ["loss", "runtime", "model_size"].
-        min_epoch (int):
-            The minimum epoch of the training of each neural networks to be used during the optimization.
-        max_epoch (int):
-            The maximum epoch of the training of each neural networks to be used during the optimization.
-        min_resol (float):
-            The minimum resolution of image data for the training of each neural networks.
-        max_resol (float):
-            The maximum resolution of image data for the training of each neural networks.
+        fidel_value_ranges (dict[str, tuple[int | float, int | float]]):
+            The minimum and maximum values for each fidelity values.
+            The keys must be the fidelity names used in each benchmark and each tuple takes lower and upper bounds
+            of each fidelity value.
         keep_benchdata (bool):
             Whether to keep the benchmark data in each instance.
             When True, serialization will happen in case of parallel optimization.
@@ -112,7 +108,7 @@ class JAHSBench201(AbstractBench):
     """
 
     _CONSTS = _BenchClassVars(
-        max_epoch=200,
+        dataset_names=_DATASET_NAMES,
         n_datasets=len(_DATASET_NAMES),
         target_metric_keys=[k for k, v in _TARGET_KEYS.__dict__.items() if v is not None],
         cont_space=CONT_SPACES[_BENCH_NAME],
@@ -120,22 +116,6 @@ class JAHSBench201(AbstractBench):
         fidel_space=FIDEL_SPACES[_BENCH_NAME],
         fidel_keys=_FidelKeys(epoch="epoch", resol="Resolution"),
     )
-
-    def __init__(
-        self,
-        dataset_id: int,
-        seed: int | None = None,  # surrogate is not stochastic
-        target_metrics: list[Literal["loss", "runtime", "model_size"]] = [RESULT_KEYS.loss],  # type: ignore[list-item]
-        fidel_value_ranges: dict[str, tuple[int | float, int | float]] = {"epoch": (22, 200), "Resolution": (0.1, 1.0)},
-        keep_benchdata: bool = True,
-    ):
-        super().__init__(
-            seed=seed,
-            fidel_value_ranges=fidel_value_ranges,
-            target_metrics=target_metrics[:],  # type: ignore[arg-type]
-            dataset_name=_DATASET_NAMES[dataset_id],
-            keep_benchdata=keep_benchdata,
-        )
 
     def get_benchdata(self) -> JAHSBenchSurrogate:
         return JAHSBenchSurrogate(dataset_name=self.dataset_name, target_metrics=self._target_metrics)
