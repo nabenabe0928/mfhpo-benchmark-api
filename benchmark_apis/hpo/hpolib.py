@@ -40,7 +40,7 @@ class RowDataType(TypedDict):
     n_params: int
 
 
-class HPOLibDatabase(AbstractHPOData):
+class HPOLibTabular(AbstractHPOData):
     """Workaround to prevent dask from serializing the objective func"""
 
     _CONSTS = _HPODataClassVars(
@@ -65,7 +65,10 @@ class HPOLibDatabase(AbstractHPOData):
             f"You should get `{self._benchdata_path}` in the end."
         )
 
-    def __getitem__(self, key: str) -> RowDataType:
+    def __call__(self, eval_config: dict[str, int | float | str | bool], fidels: dict[str, int | float]) -> ResultType:
+        raise NotImplementedError
+
+    def __getitem__(self, key: str) -> RowDataType:  # type: ignore[override]
         return self._db[key]
 
 
@@ -117,7 +120,7 @@ class HPOLib(AbstractBench):
         self,
         dataset_id: int,
         seed: int | None = None,
-        target_metrics: list[Literal["loss", "runtime", "model_size"]] = [RESULT_KEYS.loss],  # type: ignore
+        target_metrics: list[Literal["loss", "runtime", "model_size"]] = [RESULT_KEYS.loss],  # type: ignore[list-item]
         min_epoch: int = 11,
         max_epoch: int = 100,
         keep_benchdata: bool = True,
@@ -126,13 +129,13 @@ class HPOLib(AbstractBench):
             seed=seed,
             min_epoch=min_epoch,
             max_epoch=max_epoch,
-            target_metrics=target_metrics[:],  # type: ignore
+            target_metrics=target_metrics[:],  # type: ignore[arg-type]
             dataset_name=_DATASET_NAMES[dataset_id],
             keep_benchdata=keep_benchdata,
         )
 
-    def get_benchdata(self) -> HPOLibDatabase:
-        return HPOLibDatabase(self.dataset_name)
+    def get_benchdata(self) -> HPOLibTabular:
+        return HPOLibTabular(self.dataset_name)
 
     def __call__(  # type: ignore[override]
         self,
@@ -140,22 +143,22 @@ class HPOLib(AbstractBench):
         *,
         fidels: dict[str, int] = {},
         seed: int | None = None,
-        benchdata: HPOLibDatabase | None = None,
+        benchdata: HPOLibTabular | None = None,
     ) -> ResultType:
         db = self._validate_benchdata(benchdata)
-        assert db is not None and isinstance(db, HPOLibDatabase)  # mypy redefinition
+        assert db is not None and isinstance(db, HPOLibTabular)  # mypy redefinition
         epoch_key = self._CONSTS.fidel_keys.epoch
         fidel = int(fidels.get(epoch_key, self._max_epoch))
         idx = seed % self._N_SEEDS if seed is not None else self._rng.randint(self._N_SEEDS)
         config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])
 
         row: RowDataType = db[config_id]
-        full_runtime = row[_TARGET_KEYS.runtime][idx]  # type: ignore
-        output: ResultType = {RESULT_KEYS.runtime: full_runtime * fidel / self.max_fidels[epoch_key]}  # type: ignore
+        runtime = row[_TARGET_KEYS.runtime][idx] * fidel / self.max_fidels[epoch_key]  # type: ignore[literal-required]
+        output: ResultType = {RESULT_KEYS.runtime: runtime}  # type: ignore[misc]
 
         if RESULT_KEYS.loss in self._target_metrics:
-            output[RESULT_KEYS.loss] = np.log(row[_TARGET_KEYS.loss][idx][fidel])  # type: ignore
+            output[RESULT_KEYS.loss] = np.log(row[_TARGET_KEYS.loss][idx][fidel])  # type: ignore[literal-required]
         if RESULT_KEYS.model_size in self._target_metrics:
-            output[RESULT_KEYS.model_size] = float(row[_TARGET_KEYS.model_size])  # type: ignore
+            output[RESULT_KEYS.model_size] = float(row[_TARGET_KEYS.model_size])  # type: ignore[literal-required]
 
         return output

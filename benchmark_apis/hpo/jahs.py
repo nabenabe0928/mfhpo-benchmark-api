@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Literal
+from typing import Any, Literal
 
 from benchmark_apis.abstract_api import (
     AbstractHPOData,
@@ -62,17 +62,20 @@ class JAHSBenchSurrogate(AbstractHPOData):
         _fidels = fidels.copy()
         nepochs = _fidels.pop("epoch")
 
-        eval_config.update({"Optimizer": "SGD", **_fidels})  # type: ignore
+        eval_config.update({"Optimizer": "SGD", **_fidels})  # type: ignore[arg-type]
         eval_config = {k: int(v) if k[:-1] == "Op" else v for k, v in eval_config.items()}
         output = self._surrogate(eval_config, nepochs=nepochs)[nepochs]
-        results: ResultType = {RESULT_KEYS.runtime: output[_TARGET_KEYS.runtime]}  # type: ignore
+        results: ResultType = {RESULT_KEYS.runtime: output[_TARGET_KEYS.runtime]}  # type: ignore[misc]
 
         if RESULT_KEYS.loss in self._target_metrics:
-            results[RESULT_KEYS.loss] = float(100 - output[_TARGET_KEYS.loss])  # type: ignore
+            results[RESULT_KEYS.loss] = float(100 - output[_TARGET_KEYS.loss])  # type: ignore[literal-required]
         if RESULT_KEYS.model_size in self._target_metrics:
-            results[RESULT_KEYS.model_size] = float(output[_TARGET_KEYS.model_size])  # type: ignore
+            results[RESULT_KEYS.model_size] = float(output[_TARGET_KEYS.model_size])  # type: ignore[literal-required]
 
         return results
+
+    def __getitem__(self, key: str) -> dict[str, Any]:
+        raise NotImplementedError
 
 
 class JAHSBench201(AbstractBench):
@@ -122,7 +125,7 @@ class JAHSBench201(AbstractBench):
         self,
         dataset_id: int,
         seed: int | None = None,  # surrogate is not stochastic
-        target_metrics: list[Literal["loss", "runtime", "model_size"]] = [RESULT_KEYS.loss],  # type: ignore
+        target_metrics: list[Literal["loss", "runtime", "model_size"]] = [RESULT_KEYS.loss],  # type: ignore[list-item]
         min_epoch: int = 22,
         max_epoch: int = 200,
         min_resol: float = 0.1,
@@ -133,7 +136,7 @@ class JAHSBench201(AbstractBench):
             seed=seed,
             min_epoch=min_epoch,
             max_epoch=max_epoch,
-            target_metrics=target_metrics[:],  # type: ignore
+            target_metrics=target_metrics[:],  # type: ignore[arg-type]
             dataset_name=_DATASET_NAMES[dataset_id],
             keep_benchdata=keep_benchdata,
         )

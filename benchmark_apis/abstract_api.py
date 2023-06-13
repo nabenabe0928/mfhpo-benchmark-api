@@ -56,6 +56,14 @@ RESULT_KEYS = _ResultKeys()
 class AbstractHPOData(metaclass=ABCMeta):
     _CONSTS: _HPODataClassVars
 
+    @abstractmethod
+    def __call__(self, eval_config: dict[str, int | float | str | bool], fidels: dict[str, int | float]) -> ResultType:
+        raise NotImplementedError
+
+    @abstractmethod
+    def __getitem__(self, key: str) -> dict[str, Any]:
+        raise NotImplementedError
+
     def _validate(self) -> None:
         self._validate_class_var()
         self._check_benchdata_availability()

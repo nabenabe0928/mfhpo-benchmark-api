@@ -105,7 +105,7 @@ class MFAbstractFunc(AbstractAPI):
         self._validate_config(x=x, z=z)
         loss = self._objective(x=x, z=z)
         runtime = self._runtime(x=x, z=z)
-        return {RESULT_KEYS.loss: loss, RESULT_KEYS.runtime: runtime}  # type: ignore
+        return {RESULT_KEYS.loss: loss, RESULT_KEYS.runtime: runtime}  # type: ignore[misc]
 
     @property
     def dataset_name_for_dir(self) -> str | None:

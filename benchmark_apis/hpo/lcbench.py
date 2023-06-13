@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import ClassVar, Literal
+from typing import Any, ClassVar, Literal
 
 from benchmark_apis.abstract_api import (
     AbstractHPOData,
@@ -62,17 +62,23 @@ class LCBenchSurrogate(AbstractHPOData):
         local_config.init_config()
         local_config.set_data_path(DATA_DIR_NAME)
 
-    def __call__(self, eval_config: dict[str, int | float], fidel: int) -> ResultType:
-        _eval_config: dict[str, int | float | str] = eval_config.copy()  # type: ignore
+    def __call__(  # type: ignore[override]
+        self, eval_config: dict[str, int | float], fidels: dict[str, int]
+    ) -> ResultType:
+        _eval_config: dict[str, int | float | str] = eval_config.copy()  # type: ignore[assignment]
         _eval_config["OpenML_task_id"] = self._dataset_id
-        _eval_config["epoch"] = fidel
+        epoch_key = "epoch"
+        _eval_config[epoch_key] = fidels[epoch_key]
 
         output = self._surrogate.objective_function(_eval_config)[0]
-        results: ResultType = {RESULT_KEYS.runtime: float(output[_TARGET_KEYS.runtime])}  # type: ignore
+        results: ResultType = {RESULT_KEYS.runtime: float(output[_TARGET_KEYS.runtime])}  # type: ignore[misc]
         if RESULT_KEYS.loss in self._target_metrics:
-            results[RESULT_KEYS.loss] = float(1.0 - output[_TARGET_KEYS.loss])  # type: ignore
+            results[RESULT_KEYS.loss] = float(1.0 - output[_TARGET_KEYS.loss])  # type: ignore[literal-required]
 
         return results
+
+    def __getitem__(self, key: str) -> dict[str, Any]:
+        raise NotImplementedError
 
 
 class LCBench(AbstractBench):
@@ -126,7 +132,7 @@ class LCBench(AbstractBench):
         self,
         dataset_id: int,
         seed: int | None = None,  # surrogate is not stochastic
-        target_metrics: list[Literal["loss", "runtime"]] = [RESULT_KEYS.loss],  # type: ignore
+        target_metrics: list[Literal["loss", "runtime"]] = [RESULT_KEYS.loss],  # type: ignore[list-item]
         min_epoch: int = 6,
         max_epoch: int = 54,
         keep_benchdata: bool = True,
@@ -136,7 +142,7 @@ class LCBench(AbstractBench):
             seed=seed,
             min_epoch=min_epoch,
             max_epoch=max_epoch,
-            target_metrics=target_metrics[:],  # type: ignore
+            target_metrics=target_metrics[:],  # type: ignore[arg-type]
             dataset_name=dataset_name,
             keep_benchdata=keep_benchdata,
         )
@@ -155,5 +161,5 @@ class LCBench(AbstractBench):
         surrogate = self._validate_benchdata(benchdata)
         assert surrogate is not None and isinstance(surrogate, LCBenchSurrogate)  # mypy redefinition
         fidel = int(min(self._TRUE_MAX_EPOCH, fidels.get(self._CONSTS.fidel_keys.epoch, self._max_epoch)))
-        self._validate_config(eval_config=eval_config)  # type: ignore
-        return surrogate(eval_config=eval_config, fidel=fidel)
+        self._validate_config(eval_config=eval_config)  # type: ignore[arg-type]
+        return surrogate(eval_config=eval_config, fidels={self._CONSTS.fidel_keys.epoch: fidel})

@@ -29,7 +29,7 @@ class RowDataType(TypedDict):
     f1: list[dict[int, float]]
 
 
-class HPOBenchDatabase(AbstractHPOData):
+class HPOBenchTabular(AbstractHPOData):
     """Workaround to prevent dask from serializing the objective func"""
 
     _CONSTS = _HPODataClassVars(
@@ -52,7 +52,10 @@ class HPOBenchDatabase(AbstractHPOData):
             f"You should get `{self._benchdata_path}` in the end."
         )
 
-    def __getitem__(self, key: str) -> RowDataType:
+    def __call__(self, eval_config: dict[str, int | float | str | bool], fidels: dict[str, int | float]) -> ResultType:
+        raise NotImplementedError
+
+    def __getitem__(self, key: str) -> RowDataType:  # type: ignore[override]
         return self._db[key]
 
 
@@ -105,7 +108,9 @@ class HPOBench(AbstractBench):
         self,
         dataset_id: int,
         seed: int | None = None,
-        target_metrics: list[Literal["loss", "runtime", "f1", "precision"]] = [RESULT_KEYS.loss],  # type: ignore
+        target_metrics: list[Literal["loss", "runtime", "f1", "precision"]] = [
+            RESULT_KEYS.loss  # type: ignore[list-item]
+        ],
         min_epoch: int = 27,
         max_epoch: int = 243,
         keep_benchdata: bool = True,
@@ -114,13 +119,13 @@ class HPOBench(AbstractBench):
             seed=seed,
             min_epoch=min_epoch,
             max_epoch=max_epoch,
-            target_metrics=target_metrics[:],  # type: ignore
+            target_metrics=target_metrics[:],  # type: ignore[arg-type]
             dataset_name=_DATASET_NAMES[dataset_id],
             keep_benchdata=keep_benchdata,
         )
 
-    def get_benchdata(self) -> HPOBenchDatabase:
-        return HPOBenchDatabase(self.dataset_name)
+    def get_benchdata(self) -> HPOBenchTabular:
+        return HPOBenchTabular(self.dataset_name)
 
     def __call__(  # type: ignore[override]
         self,
@@ -128,26 +133,28 @@ class HPOBench(AbstractBench):
         *,
         fidels: dict[str, int] = {},
         seed: int | None = None,
-        benchdata: HPOBenchDatabase | None = None,
+        benchdata: HPOBenchTabular | None = None,
     ) -> ResultType:
         fidel = int(fidels.get(self._CONSTS.fidel_keys.epoch, self._max_epoch))
         if fidel not in self._EPOCHS:
             raise ValueError(f"fidel for {self.__class__.__name__} must be in {self._EPOCHS}, but got {fidel}")
 
         db = self._validate_benchdata(benchdata)
-        assert db is not None and isinstance(db, HPOBenchDatabase)  # mypy redefinition
+        assert db is not None and isinstance(db, HPOBenchTabular)  # mypy redefinition
         idx = seed % self._N_SEEDS if seed is not None else self._rng.randint(self._N_SEEDS)
         config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])
 
         row: RowDataType = db[config_id]
-        runtime = row[_TARGET_KEYS.runtime][idx][fidel]  # type: ignore
-        output: ResultType = {RESULT_KEYS.runtime: runtime}  # type: ignore
+        runtime = row[_TARGET_KEYS.runtime][idx][fidel]  # type: ignore[literal-required]
+        output: ResultType = {RESULT_KEYS.runtime: runtime}  # type: ignore[literal-required,misc]
 
         if RESULT_KEYS.loss in self._target_metrics:
-            output[RESULT_KEYS.loss] = 1.0 - row[_TARGET_KEYS.loss][idx][fidel]  # type: ignore
+            output[RESULT_KEYS.loss] = 1.0 - row[_TARGET_KEYS.loss][idx][fidel]  # type: ignore[literal-required]
         if RESULT_KEYS.f1 in self._target_metrics:
-            output[RESULT_KEYS.f1] = float(row[_TARGET_KEYS.f1][idx][fidel])  # type: ignore
+            output[RESULT_KEYS.f1] = float(row[_TARGET_KEYS.f1][idx][fidel])  # type: ignore[literal-required]
         if RESULT_KEYS.precision in self._target_metrics:
-            output[RESULT_KEYS.precision] = float(row[_TARGET_KEYS.precision][idx][fidel])  # type: ignore
+            output[RESULT_KEYS.precision] = float(  # type: ignore[literal-required]
+                row[_TARGET_KEYS.precision][idx][fidel]  # type: ignore[literal-required]
+            )
 
         return output
