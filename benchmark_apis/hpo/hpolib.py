@@ -130,7 +130,7 @@ class HPOLib(AbstractBench):
         db = self._validate_benchdata(benchdata)
         assert db is not None and isinstance(db, HPOLibTabular)  # mypy redefinition
         epoch_key = self._CONSTS.fidel_keys.epoch
-        fidel = int(self._validate_fidels(fidels)[epoch_key])
+        fidel = int(self._validate_fidels(fidels)[epoch_key])  # type: ignore[arg-type]
         idx = seed % self._N_SEEDS if seed is not None else self._rng.randint(self._N_SEEDS)
         config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])
 

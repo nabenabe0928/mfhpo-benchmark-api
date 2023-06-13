@@ -168,8 +168,7 @@ class AbstractBench(AbstractAPI):
         return eval_config
 
     def _validate_fidels(self, fidels: dict[str, int | float] | None) -> dict[str, int | float]:
-        fidels = fidels if fidels is not None else {}
-        _fidels = fidels.copy()
+        _fidels = fidels.copy() if fidels is not None else {}
         for fidel_key, value_range in self._fidel_value_ranges.items():
             lower, upper = value_range.lower, value_range.upper
             if fidel_key not in _fidels:

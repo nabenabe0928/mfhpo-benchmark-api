@@ -74,6 +74,9 @@ def test_jahs_invalid_input():
         bench = JAHSBench201(dataset_id=0, keep_benchdata=False)
         bench(eval_config={})
 
+
+@unittest.skipIf(not IS_LOCAL, "Data is too heavy to prepare on the GitHub server")
+def test_jahs_invalid_input_in_call():
     bench = JAHSBench201(dataset_id=0, keep_benchdata=True)
     config = bench.config_space.sample_configuration().get_dictionary()
     with pytest.raises(ValueError, match=r"epoch must be in \[*"):
@@ -141,6 +144,9 @@ def test_lcbench_invalid_input():
         bench = LCBench(dataset_id=0, keep_benchdata=False)
         bench(eval_config={})
 
+
+@unittest.skipIf(not IS_LOCAL, "Data is too heavy to prepare on the GitHub server")
+def test_lcbench_invalid_input_in_call():
     bench = LCBench(dataset_id=0, keep_benchdata=True)
     config = bench.config_space.sample_configuration().get_dictionary()
     with pytest.raises(ValueError, match=r"epoch must be in \[*"):
@@ -204,6 +210,9 @@ def test_hpolib_invalid_input():
         bench = HPOLib(dataset_id=0, keep_benchdata=False)
         bench(eval_config={})
 
+
+@unittest.skipIf(not IS_LOCAL, "Data is too heavy to prepare on the GitHub server")
+def test_hpolib_invalid_input_in_call():
     bench = HPOLib(dataset_id=0, keep_benchdata=True)
     config = bench.config_space.sample_configuration().get_dictionary()
     with pytest.raises(ValueError, match=r"epoch must be in \[*"):
@@ -284,6 +293,9 @@ def test_hpobench_invalid_input():
         bench = HPOBench(dataset_id=0, keep_benchdata=False)
         bench(eval_config=bench.config_space.sample_configuration().get_dictionary(), fidels={"epoch": 50})
 
+
+@unittest.skipIf(not IS_LOCAL, "Data is too heavy to prepare on the GitHub server")
+def test_hpobench_invalid_input_in_call():
     bench = HPOBench(dataset_id=0, fidel_value_ranges={"epoch": (9, 81)}, keep_benchdata=True)
     config = bench.config_space.sample_configuration().get_dictionary()
     with pytest.raises(ValueError, match=r"epoch must be in \[*"):
