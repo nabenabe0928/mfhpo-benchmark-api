@@ -109,10 +109,6 @@ class AbstractAPI(metaclass=ABCMeta):
     ) -> ResultType:
         raise NotImplementedError
 
-    @abstractmethod
-    def _validate_config(self, *args: Any, **kwargs: Any) -> None:
-        raise NotImplementedError
-
     @property
     @abstractmethod
     def dataset_name_for_dir(self) -> str | None:

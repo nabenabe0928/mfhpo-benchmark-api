@@ -121,14 +121,12 @@ class HPOLib(AbstractBench):
         dataset_id: int,
         seed: int | None = None,
         target_metrics: list[Literal["loss", "runtime", "model_size"]] = [RESULT_KEYS.loss],  # type: ignore[list-item]
-        min_epoch: int = 11,
-        max_epoch: int = 100,
+        fidel_value_ranges: dict[str, tuple[int | float, int | float]] = {"epoch": (11, 100)},
         keep_benchdata: bool = True,
     ):
         super().__init__(
             seed=seed,
-            min_epoch=min_epoch,
-            max_epoch=max_epoch,
+            fidel_value_ranges=fidel_value_ranges,
             target_metrics=target_metrics[:],  # type: ignore[arg-type]
             dataset_name=_DATASET_NAMES[dataset_id],
             keep_benchdata=keep_benchdata,
@@ -148,12 +146,12 @@ class HPOLib(AbstractBench):
         db = self._validate_benchdata(benchdata)
         assert db is not None and isinstance(db, HPOLibTabular)  # mypy redefinition
         epoch_key = self._CONSTS.fidel_keys.epoch
-        fidel = int(fidels.get(epoch_key, self._max_epoch))
+        fidel = int(fidels.get(epoch_key, self._max_fidels[epoch_key]))
         idx = seed % self._N_SEEDS if seed is not None else self._rng.randint(self._N_SEEDS)
         config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])
 
         row: RowDataType = db[config_id]
-        runtime = row[_TARGET_KEYS.runtime][idx] * fidel / self.max_fidels[epoch_key]  # type: ignore[literal-required]
+        runtime = row[_TARGET_KEYS.runtime][idx] * fidel / self._max_fidels[epoch_key]  # type: ignore[literal-required]
         output: ResultType = {RESULT_KEYS.runtime: runtime}  # type: ignore[misc]
 
         if RESULT_KEYS.loss in self._target_metrics:

@@ -133,15 +133,13 @@ class LCBench(AbstractBench):
         dataset_id: int,
         seed: int | None = None,  # surrogate is not stochastic
         target_metrics: list[Literal["loss", "runtime"]] = [RESULT_KEYS.loss],  # type: ignore[list-item]
-        min_epoch: int = 6,
-        max_epoch: int = 54,
+        fidel_value_ranges: dict[str, tuple[int | float, int | float]] = {"epoch": (6, 54)},
         keep_benchdata: bool = True,
     ):
         dataset_name, self._dataset_id = _DATASET_INFO[dataset_id]
         super().__init__(
             seed=seed,
-            min_epoch=min_epoch,
-            max_epoch=max_epoch,
+            fidel_value_ranges=fidel_value_ranges,
             target_metrics=target_metrics[:],  # type: ignore[arg-type]
             dataset_name=dataset_name,
             keep_benchdata=keep_benchdata,
@@ -160,6 +158,8 @@ class LCBench(AbstractBench):
     ) -> ResultType:
         surrogate = self._validate_benchdata(benchdata)
         assert surrogate is not None and isinstance(surrogate, LCBenchSurrogate)  # mypy redefinition
-        fidel = int(min(self._TRUE_MAX_EPOCH, fidels.get(self._CONSTS.fidel_keys.epoch, self._max_epoch)))
-        self._validate_config(eval_config=eval_config)  # type: ignore[arg-type]
-        return surrogate(eval_config=eval_config, fidels={self._CONSTS.fidel_keys.epoch: fidel})
+
+        epoch_key = self._CONSTS.fidel_keys.epoch
+        _eval_config, _fidels = self._validate_inputs(eval_config=eval_config, fidels=fidels)  # type: ignore[arg-type]
+        _fidels[epoch_key] = int(min(self._TRUE_MAX_EPOCH, _fidels[epoch_key]))
+        return surrogate(eval_config=_eval_config, fidels=_fidels)  # type: ignore[arg-type]

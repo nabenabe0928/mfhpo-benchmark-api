@@ -80,24 +80,24 @@ class AbstractBench(AbstractAPI):
     def __init__(
         self,
         seed: int | None,
-        min_epoch: int,
-        max_epoch: int,
+        fidel_value_ranges: dict[str, tuple[int | float, int | float]],
         target_metrics: list[str],
         dataset_name: str,
         keep_benchdata: bool,
     ):
         super().__init__(seed=seed)
-        self._min_epoch = min_epoch
-        self._max_epoch = max_epoch
         self._target_metrics = target_metrics[:]
         self._dataset_name = dataset_name
         self._benchdata = self.get_benchdata() if keep_benchdata else None
         self._config_space = self.config_space
+        self._fidel_keys = self.fidel_keys
         self._fidel_value_ranges: dict[str, _ValueRange]
+        self._validate_fidel_value_ranges(fidel_value_ranges=fidel_value_ranges)
 
-        # self._validate_fidel_value_range()
+        self._min_fidels = self.min_fidels
+        self._max_fidels = self.max_fidels
+
         self._validate_target_metrics()
-        self._validate_epochs()
         self._validate_class_vars()
 
     @abstractmethod
@@ -105,20 +105,29 @@ class AbstractBench(AbstractAPI):
         raise NotImplementedError
 
     def _validate_fidel_value_ranges(self, fidel_value_ranges: dict[str, tuple[int | float, int | float]]) -> None:
-        if any(fidel_key not in self.fidel_keys for fidel_key in fidel_value_ranges):
+        if any(fidel_key not in self._fidel_keys for fidel_key in fidel_value_ranges):
             fidel_keys = list(fidel_value_ranges.keys())
-            raise KeyError(f"Keys in fidel_value_ranges must be in {self.fidel_keys}, but got {fidel_keys}")
+            raise KeyError(f"Keys in fidel_value_ranges must be in {self._fidel_keys}, but got {fidel_keys}")
 
         self._fidel_value_ranges = {}
         for fidel_key, value_ranges in self._CONSTS.fidel_space.__dict__.items():
+            if value_ranges is None:
+                continue
+
+            user_side_fidel_key = getattr(self._CONSTS.fidel_keys, fidel_key)
             hard_lower, hard_upper = value_ranges.hard.lower, value_ranges.hard.upper
-            lower, upper = fidel_value_ranges.get(fidel_key, (value_ranges.default.lower, value_ranges.default.upper))
-            self._fidel_value_ranges[fidel_key] = _ValueRange(lower=lower, upper=upper)
+            lower, upper = fidel_value_ranges.get(
+                user_side_fidel_key, (value_ranges.default.lower, value_ranges.default.upper)
+            )
+            self._fidel_value_ranges[user_side_fidel_key] = _ValueRange(lower=lower, upper=upper)
             if lower < hard_lower or upper > hard_upper:
-                raise ValueError(f"{fidel_key} must be in [{hard_lower}, {hard_upper}], but got {lower=} and {upper=}")
+                raise ValueError(
+                    f"{user_side_fidel_key} must be in [{hard_lower}, {hard_upper}], but got {lower=} and {upper=}"
+                )
             if lower >= upper:
                 raise ValueError(
-                    f"lower < upper for {fidel_key} must hold, but got {lower=} and {upper=} in fidel_value_ranges"
+                    f"lower < upper for {user_side_fidel_key} must hold, "
+                    f"but got {lower=} and {upper=} in fidel_value_ranges"
                 )
 
     @classmethod
@@ -127,7 +136,14 @@ class AbstractBench(AbstractAPI):
         if not hasattr(cls, "_CONSTS"):
             raise NotImplementedError(f"Child class of {cls.__name__} must define _CONSTS.")
 
-    def _validate_config(self, eval_config: dict[str, int | float | str | bool]) -> None:
+    def _validate_inputs(
+        self, eval_config: dict[str, int | float | str | bool], fidels: dict[str, int | float]
+    ) -> tuple[dict[str, int | float | str | bool], dict[str, int | float]]:
+        _eval_config = self._validate_config(eval_config=eval_config.copy())
+        _fidels = self._validate_fidels(fidels=fidels.copy())
+        return _eval_config, _fidels
+
+    def _validate_config(self, eval_config: dict[str, int | float | str | bool]) -> dict[str, int | float | str | bool]:
         EPS = 1e-12
         for hp in self._config_space.get_hyperparameters():
             name, val = hp.name, eval_config[hp.name]
@@ -147,16 +163,20 @@ class AbstractBench(AbstractAPI):
             if not ok:
                 raise ValueError(f"{name} must be in [{lb=}, {ub=}], but got {eval_config[name]}.")
 
-    def _validate_fidels(self, fidels: dict[str, int | float]) -> None:
+        return eval_config
+
+    def _validate_fidels(self, fidels: dict[str, int | float]) -> dict[str, int | float]:
         for fidel_key, value_range in self._fidel_value_ranges.items():
             lower, upper = value_range.lower, value_range.upper
             if fidel_key not in fidels:
-                fidels[fidel_key] = self.max_fidels[fidel_key]
+                fidels[fidel_key] = self._max_fidels[fidel_key]
                 continue
 
             fidel_val = fidels[fidel_key]
             if not (lower <= fidel_val <= upper):
                 raise ValueError(f"{fidel_key} must be in [{lower}, {upper}], but got {fidel_val}.")
+
+        return fidels
 
     def _validate_target_metrics(self) -> None:
         target_metrics = self._target_metrics
@@ -164,13 +184,6 @@ class AbstractBench(AbstractAPI):
             raise ValueError(
                 f"All elements in target_metrics must be in {self._CONSTS.target_metric_keys}, but got {target_metrics}"
             )
-
-    def _validate_epochs(self) -> None:
-        min_epoch, max_epoch = self._min_epoch, self._max_epoch
-        if min_epoch <= 0 or max_epoch > self._CONSTS.max_epoch:
-            raise ValueError(f"epoch must be in [1, {self._CONSTS.max_epoch}], but got {min_epoch=} and {max_epoch=}")
-        if min_epoch >= max_epoch:
-            raise ValueError(f"min_epoch < max_epoch must hold, but got {min_epoch=} and {max_epoch=}")
 
     def _validate_benchdata(self, benchdata: AbstractHPOData | None) -> AbstractHPOData:
         if benchdata is None and self._benchdata is None:
@@ -222,11 +235,11 @@ class AbstractBench(AbstractAPI):
     @property
     def min_fidels(self) -> dict[str, int | float]:
         # eta ** S <= R/r < eta ** (S + 1) to have S rungs.
-        return {v: getattr(self, f"_min_{k}") for k, v in self._CONSTS.fidel_keys.__dict__.items() if v is not None}
+        return {k: r.lower for k, r in self._fidel_value_ranges.items()}
 
     @property
     def max_fidels(self) -> dict[str, int | float]:
-        return {v: getattr(self, f"_max_{k}") for k, v in self._CONSTS.fidel_keys.__dict__.items() if v is not None}
+        return {k: r.upper for k, r in self._fidel_value_ranges.items()}
 
     @property
     def fidel_keys(self) -> list[str]:

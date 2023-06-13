@@ -111,16 +111,14 @@ class HPOBench(AbstractBench):
         target_metrics: list[Literal["loss", "runtime", "f1", "precision"]] = [
             RESULT_KEYS.loss  # type: ignore[list-item]
         ],
-        min_epoch: int = 27,
-        max_epoch: int = 243,
+        fidel_value_ranges: dict[str, tuple[int | float, int | float]] = {"epoch": (27, 243)},
         keep_benchdata: bool = True,
     ):
         super().__init__(
             seed=seed,
-            min_epoch=min_epoch,
-            max_epoch=max_epoch,
             target_metrics=target_metrics[:],  # type: ignore[arg-type]
             dataset_name=_DATASET_NAMES[dataset_id],
+            fidel_value_ranges=fidel_value_ranges,
             keep_benchdata=keep_benchdata,
         )
 
@@ -135,7 +133,8 @@ class HPOBench(AbstractBench):
         seed: int | None = None,
         benchdata: HPOBenchTabular | None = None,
     ) -> ResultType:
-        fidel = int(fidels.get(self._CONSTS.fidel_keys.epoch, self._max_epoch))
+        epoch_key = self._CONSTS.fidel_keys.epoch
+        fidel = int(fidels.get(epoch_key, self._max_fidels[epoch_key]))
         if fidel not in self._EPOCHS:
             raise ValueError(f"fidel for {self.__class__.__name__} must be in {self._EPOCHS}, but got {fidel}")
 

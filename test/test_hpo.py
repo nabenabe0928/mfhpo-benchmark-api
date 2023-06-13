@@ -32,7 +32,9 @@ def test_jahs(target_metrics):
         assert set(target_metrics + ["runtime"]) == set(output.keys())
         assert bench.fidel_keys == ["epoch", "Resolution"]
 
-    bench = JAHSBench201(dataset_id=0, min_epoch=10, max_epoch=30, min_resol=0.1, max_resol=0.9, keep_benchdata=False)
+    bench = JAHSBench201(
+        dataset_id=0, fidel_value_ranges={"epoch": (10, 30), "Resolution": (0.1, 0.9)}, keep_benchdata=False
+    )
     assert bench.min_fidels["epoch"] == 10
     assert bench.max_fidels["epoch"] == 30
     assert bench.min_fidels["Resolution"] == 0.1
@@ -50,18 +52,18 @@ def test_jahs_not_found():
 
 
 def test_jahs_invalid_input():
-    with pytest.raises(ValueError, match=r"min_resol < max_resol*"):
-        JAHSBench201(dataset_id=0, min_resol=0.5, max_resol=0.1, keep_benchdata=False)
-    with pytest.raises(ValueError, match=r"Resolution*"):
-        JAHSBench201(dataset_id=0, min_resol=-0.1, max_resol=1.0, keep_benchdata=False)
-    with pytest.raises(ValueError, match=r"Resolution*"):
-        JAHSBench201(dataset_id=0, min_resol=0.0, max_resol=1.1, keep_benchdata=False)
-    with pytest.raises(ValueError, match=r"min_epoch < max_epoch*"):
-        JAHSBench201(dataset_id=0, min_epoch=50, max_epoch=10, keep_benchdata=False)
-    with pytest.raises(ValueError, match=r"epoch*"):
-        JAHSBench201(dataset_id=0, min_epoch=-1, max_epoch=50, keep_benchdata=False)
-    with pytest.raises(ValueError, match=r"epoch*"):
-        JAHSBench201(dataset_id=0, min_epoch=1, max_epoch=1000, keep_benchdata=False)
+    with pytest.raises(ValueError, match=r"lower < upper for Resolution*"):
+        JAHSBench201(dataset_id=0, fidel_value_ranges={"Resolution": (0.5, 0.1)}, keep_benchdata=False)
+    with pytest.raises(ValueError, match=r"Resolution must be*"):
+        JAHSBench201(dataset_id=0, fidel_value_ranges={"Resolution": (-0.1, 1.0)}, keep_benchdata=False)
+    with pytest.raises(ValueError, match=r"Resolution must be*"):
+        JAHSBench201(dataset_id=0, fidel_value_ranges={"Resolution": (0.0, 1.1)}, keep_benchdata=False)
+    with pytest.raises(ValueError, match=r"lower < upper for epoch*"):
+        JAHSBench201(dataset_id=0, fidel_value_ranges={"epoch": (50, 10)}, keep_benchdata=False)
+    with pytest.raises(ValueError, match=r"epoch must be*"):
+        JAHSBench201(dataset_id=0, fidel_value_ranges={"epoch": (-1, 50)}, keep_benchdata=False)
+    with pytest.raises(ValueError, match=r"epoch must be*"):
+        JAHSBench201(dataset_id=0, fidel_value_ranges={"epoch": (1, 1000)}, keep_benchdata=False)
     with pytest.raises(ValueError, match=r"All elements*"):
         JAHSBench201(dataset_id=0, target_metrics=["dummy"], keep_benchdata=False)
     with pytest.raises(ValueError, match=r"data must be provided*"):
@@ -86,7 +88,7 @@ def test_lcbench(target_metrics):
         assert set(target_metrics + ["runtime"]) == set(output.keys())
         assert bench.fidel_keys == ["epoch"]
 
-    bench = LCBench(dataset_id=0, min_epoch=10, max_epoch=30, keep_benchdata=False)
+    bench = LCBench(dataset_id=0, fidel_value_ranges={"epoch": (10, 30)}, keep_benchdata=False)
     assert bench.min_fidels["epoch"] == 10
     assert bench.max_fidels["epoch"] == 30
 
@@ -102,12 +104,12 @@ def test_lcbench_not_found():
 
 
 def test_lcbench_invalid_input():
-    with pytest.raises(ValueError, match=r"min_epoch < max_epoch*"):
-        LCBench(dataset_id=0, min_epoch=50, max_epoch=10, keep_benchdata=False)
-    with pytest.raises(ValueError, match=r"epoch*"):
-        LCBench(dataset_id=0, min_epoch=-1, max_epoch=50, keep_benchdata=False)
-    with pytest.raises(ValueError, match=r"epoch*"):
-        LCBench(dataset_id=0, min_epoch=1, max_epoch=1000, keep_benchdata=False)
+    with pytest.raises(ValueError, match=r"lower < upper for epoch*"):
+        LCBench(dataset_id=0, fidel_value_ranges={"epoch": (50, 10)}, keep_benchdata=False)
+    with pytest.raises(ValueError, match=r"epoch must be*"):
+        LCBench(dataset_id=0, fidel_value_ranges={"epoch": (-1, 50)}, keep_benchdata=False)
+    with pytest.raises(ValueError, match=r"epoch must be*"):
+        LCBench(dataset_id=0, fidel_value_ranges={"epoch": (1, 1000)}, keep_benchdata=False)
     with pytest.raises(ValueError, match=r"All elements*"):
         LCBench(dataset_id=0, target_metrics=["dummy"], keep_benchdata=False)
     with pytest.raises(ValueError, match=r"data must be provided*"):
@@ -136,7 +138,7 @@ def test_hpolib(target_metrics):
         assert set(target_metrics + ["runtime"]) == set(output.keys())
         assert bench.fidel_keys == ["epoch"]
 
-    bench = HPOLib(dataset_id=0, min_epoch=10, max_epoch=30)
+    bench = HPOLib(dataset_id=0, fidel_value_ranges={"epoch": (10, 30)})
     assert bench.min_fidels["epoch"] == 10
     assert bench.max_fidels["epoch"] == 30
 
@@ -152,12 +154,12 @@ def test_hpolib_not_found():
 
 
 def test_hpolib_invalid_input():
-    with pytest.raises(ValueError, match=r"min_epoch < max_epoch*"):
-        HPOLib(dataset_id=0, min_epoch=50, max_epoch=10, keep_benchdata=False)
-    with pytest.raises(ValueError, match=r"epoch*"):
-        HPOLib(dataset_id=0, min_epoch=-1, max_epoch=50, keep_benchdata=False)
-    with pytest.raises(ValueError, match=r"epoch*"):
-        HPOLib(dataset_id=0, min_epoch=1, max_epoch=1000, keep_benchdata=False)
+    with pytest.raises(ValueError, match=r"lower < upper for epoch*"):
+        HPOLib(dataset_id=0, fidel_value_ranges={"epoch": (50, 10)}, keep_benchdata=False)
+    with pytest.raises(ValueError, match=r"epoch must be*"):
+        HPOLib(dataset_id=0, fidel_value_ranges={"epoch": (-1, 50)}, keep_benchdata=False)
+    with pytest.raises(ValueError, match=r"epoch must be*"):
+        HPOLib(dataset_id=0, fidel_value_ranges={"epoch": (1, 1000)}, keep_benchdata=False)
     with pytest.raises(ValueError, match=r"All elements*"):
         HPOLib(dataset_id=0, target_metrics=["dummy"], keep_benchdata=False)
     with pytest.raises(ValueError, match=r"data must be provided*"):
@@ -194,7 +196,7 @@ def test_hpobench(target_metrics):
         assert set(target_metrics + ["runtime"]) == set(output.keys())
         assert bench.fidel_keys == ["epoch"]
 
-    bench = HPOBench(dataset_id=0, min_epoch=3, max_epoch=81)
+    bench = HPOBench(dataset_id=0, fidel_value_ranges={"epoch": (3, 81)})
     assert bench.min_fidels["epoch"] == 3
     assert bench.max_fidels["epoch"] == 81
 
@@ -211,12 +213,12 @@ def test_hpobench_not_found():
 
 
 def test_hpobench_invalid_input():
-    with pytest.raises(ValueError, match=r"min_epoch < max_epoch*"):
-        HPOBench(dataset_id=0, min_epoch=50, max_epoch=10, keep_benchdata=False)
-    with pytest.raises(ValueError, match=r"epoch*"):
-        HPOBench(dataset_id=0, min_epoch=-1, max_epoch=50, keep_benchdata=False)
-    with pytest.raises(ValueError, match=r"epoch*"):
-        HPOBench(dataset_id=0, min_epoch=1, max_epoch=1000, keep_benchdata=False)
+    with pytest.raises(ValueError, match=r"lower < upper for epoch*"):
+        HPOBench(dataset_id=0, fidel_value_ranges={"epoch": (50, 10)}, keep_benchdata=False)
+    with pytest.raises(ValueError, match=r"epoch must be*"):
+        HPOBench(dataset_id=0, fidel_value_ranges={"epoch": (-1, 50)}, keep_benchdata=False)
+    with pytest.raises(ValueError, match=r"epoch must be*"):
+        HPOBench(dataset_id=0, fidel_value_ranges={"epoch": (1, 1000)}, keep_benchdata=False)
     with pytest.raises(ValueError, match=r"All elements*"):
         HPOBench(dataset_id=0, target_metrics=["dummy"], keep_benchdata=False)
     with pytest.raises(ValueError, match=r"data must be provided*"):

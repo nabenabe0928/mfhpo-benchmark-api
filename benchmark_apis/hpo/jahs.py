@@ -126,30 +126,16 @@ class JAHSBench201(AbstractBench):
         dataset_id: int,
         seed: int | None = None,  # surrogate is not stochastic
         target_metrics: list[Literal["loss", "runtime", "model_size"]] = [RESULT_KEYS.loss],  # type: ignore[list-item]
-        min_epoch: int = 22,
-        max_epoch: int = 200,
-        min_resol: float = 0.1,
-        max_resol: float = 1.0,
+        fidel_value_ranges: dict[str, tuple[int | float, int | float]] = {"epoch": (22, 200), "Resolution": (0.1, 1.0)},
         keep_benchdata: bool = True,
     ):
         super().__init__(
             seed=seed,
-            min_epoch=min_epoch,
-            max_epoch=max_epoch,
+            fidel_value_ranges=fidel_value_ranges,
             target_metrics=target_metrics[:],  # type: ignore[arg-type]
             dataset_name=_DATASET_NAMES[dataset_id],
             keep_benchdata=keep_benchdata,
         )
-
-        self._min_resol, self._max_resol = min_resol, max_resol
-        self._validate_resols()
-
-    def _validate_resols(self) -> None:
-        min_resol, max_resol = self._min_resol, self._max_resol
-        if min_resol <= 0 or max_resol > 1.0:
-            raise ValueError(f"Resolution must be in [0.0, 1.0], but got {min_resol=} and {max_resol=}")
-        if min_resol >= max_resol:
-            raise ValueError(f"min_resol < max_resol must hold, but got {min_resol=} and {max_resol=}")
 
     def get_benchdata(self) -> JAHSBenchSurrogate:
         return JAHSBenchSurrogate(dataset_name=self.dataset_name, target_metrics=self._target_metrics)
@@ -165,12 +151,10 @@ class JAHSBench201(AbstractBench):
         surrogate = self._validate_benchdata(benchdata)
         assert surrogate is not None and isinstance(surrogate, JAHSBenchSurrogate)  # mypy redefinition
 
-        _fidels = self.max_fidels
-        _fidels.update(**fidels)
+        _eval_config, _fidels = self._validate_inputs(eval_config, fidels)
         assert self._CONSTS.disc_space is not None  # mypy redefinition
         _eval_config = {
             k: self._CONSTS.disc_space[k][int(v)] if k in self._CONSTS.disc_space else float(v)
-            for k, v in eval_config.items()
+            for k, v in _eval_config.items()
         }
-        self._validate_config(eval_config=eval_config)
         return surrogate(eval_config=_eval_config, fidels=_fidels)
