@@ -45,10 +45,10 @@ class HPOBenchTabular(AbstractHPOData):
     @property
     def install_instruction(self) -> str:
         return (
-            f"\t$ cd {self._CONSTS.dir}\n"
+            f"\033[31m\t$ cd {self._CONSTS.dir}\n"
             f"\t$ wget {self._CONSTS.url}\n"
-            "\t$ unzip nn.zip\n\n"
-            "Then extract the pkl file using https://github.com/nabenabe0928/hpolib-extractor/.\n"
+            "\t$ unzip nn.zip\n"
+            "\tThen extract the pkl file using https://github.com/nabenabe0928/hpolib-extractor/.\033[0m\n"
             f"You should get `{self._benchdata_path}` in the end."
         )
 

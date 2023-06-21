@@ -53,9 +53,9 @@ class JAHSBenchSurrogate(AbstractHPOData):
     @property
     def install_instruction(self) -> str:
         return (
-            f"$ cd {self._CONSTS.dir}\n"
-            f"$ wget {self._CONSTS.url}\n\n"
-            f"Then untar `assembled_surrogates.tar` in {self._CONSTS.dir}."
+            f"\033[31m\t$ cd {self._CONSTS.dir}\n"
+            f"\t$ wget {self._CONSTS.url}\n"
+            f"\tThen untar `assembled_surrogates.tar` in {self._CONSTS.dir}.\033[0m"
         )
 
     def __call__(self, eval_config: dict[str, int | float | str | bool], fidels: dict[str, int | float]) -> ResultType:

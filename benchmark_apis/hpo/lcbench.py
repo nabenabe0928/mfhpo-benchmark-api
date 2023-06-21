@@ -54,8 +54,9 @@ class LCBenchSurrogate(AbstractHPOData):
     @property
     def install_instruction(self) -> str:
         return (
-            f"\tAccess to {self._CONSTS.url} and download `{_BENCH_NAME}.zip` from the website.\n\n"
-            f"After that, please unzip `{_BENCH_NAME}.zip` in {self._CONSTS.dir}."
+            f"\033[31m\tAccess to {self._CONSTS.url} and download `{_BENCH_NAME}.zip` from the website.\n"
+            f"\tAfter that, please unzip `{_BENCH_NAME}.zip` in {self._CONSTS.dir}.\033[0m\n"
+            f"Note that you need to simply tick `{_BENCH_NAME}` and click `Download`."
         )
 
     def _check_benchdata_availability(self) -> None:
