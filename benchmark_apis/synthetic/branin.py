@@ -59,12 +59,18 @@ class MFBranin(MFAbstractFunc):
         min_fidel: int = 11,
         max_fidel: int = 100,
         runtime_factor: float = 3600.0,
+        deterministic: bool = False,
     ):
         super().__init__(
-            fidel_dim=fidel_dim, seed=seed, runtime_factor=runtime_factor, min_fidel=min_fidel, max_fidel=max_fidel
+            fidel_dim=fidel_dim,
+            seed=seed,
+            runtime_factor=runtime_factor,
+            min_fidel=min_fidel,
+            max_fidel=max_fidel,
+            deterministic=deterministic,
+            noise_std=float(np.sqrt(0.05)),
+            dim=2,
         )
-        self._noise_std = float(np.sqrt(0.05))
-        self._dim = 2
         self._delta_b, self._delta_c, self._delta_t = delta_b, delta_c, delta_t
 
     def _fetch_coefs(self, z: np.ndarray) -> _BraninCoefficients:
@@ -98,8 +104,7 @@ class MFBranin(MFAbstractFunc):
             + coefs.s * (1 - coefs.t) * np.cos(x1)
             + coefs.s
         )
-        noise = self._noise_std * self._rng.normal()
-        return float(loss + noise)
+        return loss
 
     def _runtime(self, x: np.ndarray, z: np.ndarray) -> float:
         # https://github.com/dragonfly/dragonfly/blob/master/examples/synthetic/branin/branin_mf.py#L24-L26

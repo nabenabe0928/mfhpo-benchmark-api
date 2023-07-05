@@ -50,16 +50,23 @@ class MFHartmann(MFAbstractFunc):
         min_fidel: int = 11,
         max_fidel: int = 100,
         runtime_factor: float = 3600.0,
+        deterministic: bool = False,
     ):
-        super().__init__(
-            fidel_dim=fidel_dim, seed=seed, runtime_factor=runtime_factor, min_fidel=min_fidel, max_fidel=max_fidel
-        )
+        noise_var = 0.01 if dim == 3 else 0.05
         if dim not in [3, 6]:
             self._raise_error_for_wrong_dim(dim=dim)
 
-        self._dim = int(dim)
-        noise_var = 0.01 if dim == 3 else 0.05
-        self._noise_std = float(np.sqrt(noise_var))
+        super().__init__(
+            fidel_dim=fidel_dim,
+            seed=seed,
+            runtime_factor=runtime_factor,
+            min_fidel=min_fidel,
+            max_fidel=max_fidel,
+            deterministic=deterministic,
+            noise_std=float(np.sqrt(noise_var)),
+            dim=int(dim),
+        )
+
         self._bias = bias
 
     def _raise_error_for_wrong_dim(self, dim: int) -> None:
@@ -112,8 +119,7 @@ class MFHartmann(MFAbstractFunc):
     def _objective(self, x: np.ndarray, z: np.ndarray) -> float:
         alphas = self.alphas - self.bias * (1 - z)
         loss = -alphas @ np.exp(np.sum(-self.A * (x - self.P) ** 2, axis=-1))
-        noise = self._noise_std * self._rng.normal()
-        return float(loss + noise)
+        return loss
 
     def _runtime(self, x: np.ndarray, z: np.ndarray) -> float:
         # https://github.com/dragonfly/dragonfly/blob/master/examples/synthetic/hartmann3_2/hartmann3_2_mf.py#L31-L34

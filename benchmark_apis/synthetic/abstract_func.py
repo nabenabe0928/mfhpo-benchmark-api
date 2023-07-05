@@ -45,6 +45,9 @@ class MFAbstractFunc(AbstractAPI):
         max_fidel: int,
         seed: int | None,
         runtime_factor: float,
+        deterministic: bool,
+        noise_std: float,
+        dim: int,
     ):
         super().__init__(seed=seed)
         if runtime_factor <= 0:
@@ -55,10 +58,12 @@ class MFAbstractFunc(AbstractAPI):
                 f"but got {fidel_dim}"
             )
 
+        self._deterministic = deterministic
+        self._noise_std = noise_std
         self._fidel_dim = fidel_dim
         self._runtime_factor = runtime_factor
-        self._dim: int
-        self._noise_std: float
+        self._dim = dim
+        self._noise_std = noise_std
         self._min_fidel, self._max_fidel = min_fidel, max_fidel
         self._validate_fidels()
         self._validate_class_vars()
@@ -104,7 +109,8 @@ class MFAbstractFunc(AbstractAPI):
         x = np.array([eval_config[f"x{d}"] for d in range(self._dim)])
         z = np.array([fidels[k] / max_fidel for k, max_fidel in self.max_fidels.items()])
         self._validate_config(x=x, z=z)
-        loss = self._objective(x=x, z=z)
+        noise = 0.0 if self._deterministic else self._noise_std * self._rng.normal()
+        loss = float(self._objective(x=x, z=z) + noise)
         runtime = self._runtime(x=x, z=z)
         return {RESULT_KEYS.loss: loss, RESULT_KEYS.runtime: runtime}  # type: ignore[misc]
 
