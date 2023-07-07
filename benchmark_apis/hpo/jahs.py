@@ -24,7 +24,8 @@ from benchmark_apis.hpo.abstract_bench import (
 
 try:
     import jahs_bench
-except ModuleNotFoundError:  # We cannot use jahs with smac
+except ModuleNotFoundError:  # pragma: no cover
+    # We cannot use jahs with smac
     _warn_not_found_module(bench_name="jahs")
 
 

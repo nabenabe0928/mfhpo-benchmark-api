@@ -10,6 +10,8 @@ import ConfigSpace as CS
 
 from benchmark_apis.abstract_api import AbstractAPI, AbstractHPOData, RESULT_KEYS
 
+import numpy as np
+
 
 @dataclass(frozen=True)
 class _FidelKeys:
@@ -153,11 +155,12 @@ class AbstractBench(AbstractAPI):
                 if val not in hp.choices:
                     raise ValueError(f"{name} must be in {hp.choices}, but got {val}.")
 
-                continue
+                continue  # pragma: no cover
 
             lb, ub = hp.lower, hp.upper
             if isinstance(hp, CS.UniformFloatHyperparameter):
                 ok = isinstance(val, float) and lb - EPS <= val <= ub + EPS
+                eval_config[name] = float(np.clip(val, lb + EPS, ub - EPS))
             else:
                 eval_config[name] = int(val)
                 ok = lb <= eval_config[name] <= ub
@@ -208,7 +211,7 @@ class AbstractBench(AbstractAPI):
                 hp = CS.UniformIntegerHyperparameter(**kwargs)
             elif type_ == "float":
                 hp = CS.UniformFloatHyperparameter(**kwargs)
-            else:
+            else:  # pragma: no cover
                 raise TypeError(f"type_ of continuous space must be `int` or `float`, but got {type_}")
 
             hyperparameters.append(hp)

@@ -11,7 +11,7 @@ import ConfigSpace as CS
 import numpy as np
 
 
-def _warn_not_found_module(bench_name: str) -> None:
+def _warn_not_found_module(bench_name: str) -> None:  # pragma: no cover
     cmd = "pip install mfhpo-benchmark-api"
     warnings.warn(
         f"{bench_name} requirements not found. Use `{cmd}[full]` or `{cmd}[{bench_name}]` when using {bench_name}."

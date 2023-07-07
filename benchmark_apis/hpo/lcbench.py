@@ -24,7 +24,7 @@ from benchmark_apis.hpo.abstract_bench import (
 
 try:
     from yahpo_gym import benchmark_set, local_config
-except ModuleNotFoundError:
+except ModuleNotFoundError:  # pragma: no cover
     _warn_not_found_module(bench_name="lcbench")
 
 
