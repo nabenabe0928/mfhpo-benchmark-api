@@ -48,6 +48,7 @@ class MFAbstractFunc(AbstractAPI):
         deterministic: bool,
         noise_std: float,
         dim: int,
+        use_fidel: bool,
     ):
         super().__init__(seed=seed)
         if runtime_factor <= 0:
@@ -61,6 +62,7 @@ class MFAbstractFunc(AbstractAPI):
         self._deterministic = deterministic
         self._noise_std = noise_std
         self._fidel_dim = fidel_dim
+        self._use_fidel = use_fidel
         self._runtime_factor = runtime_factor
         self._dim = dim
         self._noise_std = noise_std
@@ -103,7 +105,12 @@ class MFAbstractFunc(AbstractAPI):
         seed: int | None = None,
     ) -> ResultType:
         fidels = fidels if fidels is not None else {}
-        if len(fidels) != self.fidel_dim:
+        if not self._use_fidel:
+            if len(fidels) > 0:
+                raise ValueError("Fidelity must not be provided for use_fidel=False.")
+
+            fidels = {f"z{d}": self._max_fidel for d in range(self._fidel_dim)}
+        if self._use_fidel and len(fidels) != self.fidel_dim:
             raise ValueError(f"The provided fidelity dimension is {self.fidel_dim}, " f"but got {fidels}")
 
         x = np.array([eval_config[f"x{d}"] for d in range(self._dim)])
