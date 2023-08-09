@@ -60,6 +60,7 @@ class MFBranin(MFAbstractFunc):
         max_fidel: int = 100,
         runtime_factor: float = 3600.0,
         deterministic: bool = False,
+        use_fidel: bool = True,
     ):
         super().__init__(
             fidel_dim=fidel_dim,
@@ -70,6 +71,7 @@ class MFBranin(MFAbstractFunc):
             deterministic=deterministic,
             noise_std=float(np.sqrt(0.05)),
             dim=2,
+            use_fidel=use_fidel,
         )
         self._delta_b, self._delta_c, self._delta_t = delta_b, delta_c, delta_t
 

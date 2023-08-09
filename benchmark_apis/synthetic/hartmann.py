@@ -51,6 +51,7 @@ class MFHartmann(MFAbstractFunc):
         max_fidel: int = 100,
         runtime_factor: float = 3600.0,
         deterministic: bool = False,
+        use_fidel: bool = True,
     ):
         noise_var = 0.01 if dim == 3 else 0.05
         if dim not in [3, 6]:
@@ -65,6 +66,7 @@ class MFHartmann(MFAbstractFunc):
             deterministic=deterministic,
             noise_std=float(np.sqrt(noise_var)),
             dim=int(dim),
+            use_fidel=use_fidel,
         )
 
         self._bias = bias
