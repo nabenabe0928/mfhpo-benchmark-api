@@ -53,6 +53,7 @@ class _BenchClassVars:
     fidel_space: _FidelValueRanges
     disc_space: dict[str, list[int | float | str | bool]] | None = None
     cont_space: dict[str, _ContinuousSpaceParams] | None = None
+    data_path: str | None = None
 
 
 curdir = os.path.dirname(os.path.abspath(__file__))
@@ -86,10 +87,15 @@ class AbstractBench(AbstractAPI):
         fidel_value_ranges: dict[str, tuple[int | float, int | float]] | None = None,
         target_metrics: list[str] | None = None,
         keep_benchdata: bool = True,
+        load_every_call: bool = False,
     ):
         super().__init__(seed=seed)
         self._target_metrics = target_metrics[:] if target_metrics is not None else [RESULT_KEYS.loss]
         self._dataset_id = dataset_id
+        self._load_every_call = load_every_call
+        if load_every_call and keep_benchdata:
+            raise ValueError("load_every_call=True can be used only if keep_benchdata=False")
+
         self._benchdata = self.get_benchdata() if keep_benchdata else None
         self._config_space = self.config_space
         self._fidel_keys = self.fidel_keys

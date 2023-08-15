@@ -129,7 +129,7 @@ class JAHSBench201(AbstractBench):
         seed: int | None = None,
         benchdata: JAHSBenchSurrogate | None = None,
     ) -> ResultType:
-        surrogate = self._validate_benchdata(benchdata)
+        surrogate = self.get_benchdata() if self._load_every_call else self._validate_benchdata(benchdata)
         assert surrogate is not None and isinstance(surrogate, JAHSBenchSurrogate)  # mypy redefinition
 
         _eval_config, _fidels = self._validate_inputs(eval_config, fidels)

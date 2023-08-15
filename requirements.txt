@@ -1,4 +1,5 @@
 ConfigSpace
 numpy
+ujson
 jahs-bench
 yahpo-gym

@@ -3,6 +3,7 @@ ConfigSpace
 numpy
 jahs-bench
 yahpo-gym
+ujson
 
 # For local check
 pytest-cov

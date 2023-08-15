@@ -17,6 +17,8 @@ from benchmark_apis.hpo.abstract_bench import (
 
 import numpy as np
 
+import ujson as json  # type: ignore
+
 
 _TARGET_KEYS = _TargetMetricKeys(loss="valid_mse", runtime="runtime", model_size="n_params")
 _BENCH_NAME = "hpolib"
@@ -119,6 +121,21 @@ class HPOLib(AbstractBench):
     def get_benchdata(self) -> HPOLibTabular:
         return HPOLibTabular(self.dataset_name)
 
+    def _fetch_result(self, eval_config: dict[str, int], benchdata: HPOLibTabular | None) -> RowDataType:
+        if self._load_every_call:
+            config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])
+            data_path = os.path.join(DATA_DIR_NAME, _BENCH_NAME, self.dataset_name, f"{config_id}.json")
+            with open(data_path, mode="r") as f:
+                row = json.load(f)
+                row[_TARGET_KEYS.loss] = [{int(fidel): v for fidel, v in r.items()} for r in row[_TARGET_KEYS.loss]]
+
+            return row
+        else:
+            db = self._validate_benchdata(benchdata)
+            assert db is not None and isinstance(db, HPOLibTabular)  # mypy redefinition
+            config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])
+            return db[config_id]
+
     def __call__(  # type: ignore[override]
         self,
         eval_config: dict[str, int],
@@ -127,14 +144,10 @@ class HPOLib(AbstractBench):
         seed: int | None = None,
         benchdata: HPOLibTabular | None = None,
     ) -> ResultType:
-        db = self._validate_benchdata(benchdata)
-        assert db is not None and isinstance(db, HPOLibTabular)  # mypy redefinition
         epoch_key = self._CONSTS.fidel_keys.epoch
         fidel = int(self._validate_fidels(fidels)[epoch_key])  # type: ignore[arg-type]
         idx = seed % self._N_SEEDS if seed is not None else self._rng.randint(self._N_SEEDS)
-        config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])
-
-        row: RowDataType = db[config_id]
+        row: RowDataType = self._fetch_result(eval_config=eval_config, benchdata=benchdata)
         runtime = row[_TARGET_KEYS.runtime][idx] * fidel / self._max_fidels[epoch_key]  # type: ignore[literal-required]
         output: ResultType = {RESULT_KEYS.runtime: runtime}  # type: ignore[misc]
 

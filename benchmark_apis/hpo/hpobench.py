@@ -15,6 +15,8 @@ from benchmark_apis.hpo.abstract_bench import (
     _FidelKeys,
 )
 
+import ujson as json  # type: ignore
+
 
 _TARGET_KEYS = _TargetMetricKeys(loss="bal_acc", runtime="runtime", precision="precision", f1="f1")
 _BENCH_NAME = "hpobench"
@@ -107,6 +109,26 @@ class HPOBench(AbstractBench):
     def get_benchdata(self) -> HPOBenchTabular:
         return HPOBenchTabular(self.dataset_name)
 
+    def _fetch_result(self, eval_config: dict[str, int | str], benchdata: HPOBenchTabular | None) -> RowDataType:
+        if self._load_every_call:
+            config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])
+            data_path = os.path.join(DATA_DIR_NAME, _BENCH_NAME, self.dataset_name, f"{config_id}.json")
+            with open(data_path, mode="r") as f:
+                row = json.load(f)
+                print(self._CONSTS.target_metric_keys)
+                row = {
+                    v: [{int(fidel): val for fidel, val in r.items()} for r in row[v]]
+                    for k, v in _TARGET_KEYS.__dict__.items()
+                    if v is not None
+                }
+
+            return row
+        else:
+            db = self._validate_benchdata(benchdata)
+            assert db is not None and isinstance(db, HPOBenchTabular)  # mypy redefinition
+            config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])
+            return db[config_id]
+
     def __call__(  # type: ignore[override]
         self,
         eval_config: dict[str, int | str],
@@ -120,12 +142,8 @@ class HPOBench(AbstractBench):
         if fidel not in self._EPOCHS:
             raise ValueError(f"fidel for {self.__class__.__name__} must be in {self._EPOCHS}, but got {fidel}")
 
-        db = self._validate_benchdata(benchdata)
-        assert db is not None and isinstance(db, HPOBenchTabular)  # mypy redefinition
         idx = seed % self._N_SEEDS if seed is not None else self._rng.randint(self._N_SEEDS)
-        config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])
-
-        row: RowDataType = db[config_id]
+        row: RowDataType = self._fetch_result(eval_config=eval_config, benchdata=benchdata)
         runtime = row[_TARGET_KEYS.runtime][idx][fidel]  # type: ignore[literal-required]
         output: ResultType = {RESULT_KEYS.runtime: runtime}  # type: ignore[literal-required,misc]
 

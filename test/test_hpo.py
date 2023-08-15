@@ -24,8 +24,11 @@ IS_LOCAL = eval(os.environ.get("MFHPO_BENCH_TEST", "False"))
         ["model_size"],
     ],
 )
-def test_jahs(target_metrics):
-    bench = JAHSBench201(dataset_id=0, target_metrics=target_metrics)
+@pytest.mark.parametrize("load_every_call", (True, False))
+def test_jahs(target_metrics, load_every_call):
+    bench = JAHSBench201(
+        dataset_id=0, target_metrics=target_metrics, keep_benchdata=not load_every_call, load_every_call=load_every_call
+    )
     for i in range(10):
         bench.reseed(seed=i)
         output = bench(bench.config_space.sample_configuration().get_dictionary())
@@ -105,8 +108,11 @@ def test_jahs_invalid_input_in_call():
         ["runtime"],
     ],
 )
-def test_lcbench(target_metrics):
-    bench = LCBench(dataset_id=0, target_metrics=target_metrics)
+@pytest.mark.parametrize("load_every_call", (True, False))
+def test_lcbench(target_metrics, load_every_call):
+    bench = LCBench(
+        dataset_id=0, target_metrics=target_metrics, keep_benchdata=not load_every_call, load_every_call=load_every_call
+    )
     for i in range(10):
         bench.reseed(seed=i)
         output = bench(bench.config_space.sample_configuration().get_dictionary())
@@ -171,8 +177,11 @@ def test_lcbench_invalid_input_in_call():
         ["model_size"],
     ],
 )
-def test_hpolib(target_metrics):
-    bench = HPOLib(dataset_id=0, target_metrics=target_metrics)
+@pytest.mark.parametrize("load_every_call", (True, False))
+def test_hpolib(target_metrics, load_every_call):
+    bench = HPOLib(
+        dataset_id=0, target_metrics=target_metrics, keep_benchdata=not load_every_call, load_every_call=load_every_call
+    )
     for i in range(10):
         bench.reseed(seed=i)
         output = bench(bench.config_space.sample_configuration().get_dictionary())
@@ -250,8 +259,11 @@ def test_hpolib_invalid_input_in_call():
         ["f1"],
     ],
 )
-def test_hpobench(target_metrics):
-    bench = HPOBench(dataset_id=0, target_metrics=target_metrics)
+@pytest.mark.parametrize("load_every_call", (True, False))
+def test_hpobench(target_metrics, load_every_call):
+    bench = HPOBench(
+        dataset_id=0, target_metrics=target_metrics, keep_benchdata=not load_every_call, load_every_call=load_every_call
+    )
     for i in range(10):
         bench.reseed(seed=i)
         output = bench(bench.config_space.sample_configuration().get_dictionary())
