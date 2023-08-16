@@ -28,6 +28,13 @@ Note that each benchmark requires the download of tabular or surrogate data.
 For HPOBench and HPOlib, please follow README of [this repository](https://github.com/nabenabe0928/hpolib-extractor).
 In the instruction, `<YOUR_DATA_PATH>` should be replaced with `~/hpo_benchmarks/hpolib` for HPOlib and `~/hpo_benchmarks/hpobench` for HPOBench.
 
+**NOTE**
+If we set an environment variable as follows, we can give some flexibility to the data path:
+```shell
+# In this example, we use datasets in /root/path/to/datasets/hpo_benchmarks/.
+$ export BENCHMARK_ROOT_PATH=/root/path/to/datasets/
+```
+
 For JAHS-Bench-201, run the following command:
 ```shell
 $ cd ~/hpo_benchmarks/jahs

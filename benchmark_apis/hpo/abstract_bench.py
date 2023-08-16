@@ -57,7 +57,7 @@ class _BenchClassVars:
 
 
 curdir = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR_NAME: Final[str] = os.path.join(os.environ["HOME"], "hpo_benchmarks")
+DATA_DIR_NAME: Final[str] = os.path.join(os.environ.get("BENCHMARK_ROOT_PATH", os.environ["HOME"]), "hpo_benchmarks")
 DATASET_NAME_PATH: Final[str] = os.path.join(curdir, "dataset_names.json")
 CONT_SPACE_PATH: Final[str] = os.path.join(curdir, "continuous_search_spaces.json")
 DISC_SPACE_PATH: Final[str] = os.path.join(curdir, "discrete_search_spaces.json")
