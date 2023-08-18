@@ -168,7 +168,7 @@ class AbstractBench(AbstractAPI):
                 ok = isinstance(val, float) and lb - EPS <= val <= ub + EPS
                 eval_config[name] = float(np.clip(val, lb + EPS, ub - EPS))
             else:
-                eval_config[name] = int(val)
+                eval_config[name] = int(np.round(val))
                 ok = lb <= eval_config[name] <= ub
 
             if not ok:
