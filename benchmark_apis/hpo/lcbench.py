@@ -60,9 +60,9 @@ class LCBenchSurrogate(AbstractHPOData):
         )
 
     def _check_benchdata_availability(self) -> None:
-        super()._check_benchdata_availability()
         local_config.init_config()
         local_config.set_data_path(DATA_DIR_NAME)
+        super()._check_benchdata_availability()
 
     def __call__(  # type: ignore[override]
         self, eval_config: dict[str, int | float], fidels: dict[str, int]
