@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import warnings
 from abc import abstractmethod
 from dataclasses import dataclass
 from typing import ClassVar, Final, Literal, TypedDict
@@ -74,6 +75,7 @@ FIDEL_SPACES: Final[dict[str, _FidelValueRanges]] = {
     for bench_name, fidels in json.load(open(FIDEL_SPACE_PATH)).items()
 }
 DATASET_NAMES: Final[dict[str, list[str]]] = json.load(open(DATASET_NAME_PATH))
+warnings.warn(f"Use the benchmark data stored in {DATA_DIR_NAME}")
 
 
 class AbstractBench(AbstractAPI):
