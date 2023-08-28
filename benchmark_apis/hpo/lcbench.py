@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import warnings
 from typing import Any, ClassVar
 
 from benchmark_apis.abstract_api import (
@@ -17,6 +18,7 @@ from benchmark_apis.hpo.abstract_bench import (
     CONT_SPACES,
     DATASET_NAMES,
     DATA_DIR_NAME,
+    DISC_SPACES,
     FIDEL_SPACES,
     _BenchClassVars,
     _FidelKeys,
@@ -34,6 +36,7 @@ curdir = os.path.dirname(os.path.abspath(__file__))
 _DATASET_NAMES = DATASET_NAMES[_BENCH_NAME]
 DATASET_IDS: dict[str, str] = json.load(open(os.path.join(curdir, "lcbench_dataset_ids.json")))
 _DATASET_INFO = tuple((name, DATASET_IDS[name]) for name in _DATASET_NAMES)
+INIT_LOCAL_CONFIG: bool = {"True": True, "False": False}[os.environ.get("INIT_LOCAL_CONFIG", "True")]
 
 
 class LCBenchSurrogate(AbstractHPOData):
@@ -59,9 +62,16 @@ class LCBenchSurrogate(AbstractHPOData):
             f"Note that you need to simply tick `{_BENCH_NAME}` and click `Download`."
         )
 
-    def _check_benchdata_availability(self) -> None:
+    @staticmethod
+    def set_local_config() -> None:
+        warnings.warn(f"The local config for LCBench was updated with {DATA_DIR_NAME}")
         local_config.init_config()
         local_config.set_data_path(DATA_DIR_NAME)
+
+    def _check_benchdata_availability(self) -> None:
+        if INIT_LOCAL_CONFIG:
+            self.set_local_config()
+
         super()._check_benchdata_availability()
 
     def __call__(  # type: ignore[override]
@@ -123,6 +133,7 @@ class LCBench(AbstractBench):
         n_datasets=len(_DATASET_NAMES),
         target_metric_keys=[k for k, v in _TARGET_KEYS.__dict__.items() if v is not None],
         cont_space=CONT_SPACES[_BENCH_NAME],
+        disc_space=DISC_SPACES[_BENCH_NAME],
         fidel_space=FIDEL_SPACES[_BENCH_NAME],
         fidel_keys=_FidelKeys(epoch="epoch"),
     )
