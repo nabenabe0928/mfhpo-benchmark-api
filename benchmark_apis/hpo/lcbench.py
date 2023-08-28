@@ -18,7 +18,6 @@ from benchmark_apis.hpo.abstract_bench import (
     CONT_SPACES,
     DATASET_NAMES,
     DATA_DIR_NAME,
-    DISC_SPACES,
     FIDEL_SPACES,
     _BenchClassVars,
     _FidelKeys,
@@ -133,7 +132,6 @@ class LCBench(AbstractBench):
         n_datasets=len(_DATASET_NAMES),
         target_metric_keys=[k for k, v in _TARGET_KEYS.__dict__.items() if v is not None],
         cont_space=CONT_SPACES[_BENCH_NAME],
-        disc_space=DISC_SPACES[_BENCH_NAME],
         fidel_space=FIDEL_SPACES[_BENCH_NAME],
         fidel_keys=_FidelKeys(epoch="epoch"),
     )

@@ -9,6 +9,7 @@
         "max_dropout": {"type_": "float", "lower": 0.0, "upper": 1.0, "log": false},
         "max_units": {"type_": "int", "lower": 64, "upper": 1024, "log": true},
         "momentum": {"type_": "float", "lower": 0.1, "upper": 0.99, "log": false},
+        "num_layers": {"type_": "int", "lower": 1, "upper": 5, "log": false},
         "weight_decay": {"type_": "float", "lower": 1e-5, "upper": 0.1, "log": true}
     }
 }
