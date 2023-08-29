@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import warnings
+from pathlib import Path
 from typing import Any, ClassVar
 
 from benchmark_apis.abstract_api import (
@@ -46,6 +47,7 @@ class LCBenchSurrogate(AbstractHPOData):
     )
 
     def __init__(self, dataset_id: str, target_metrics: list[str], root_dir: str):
+        local_config.settings_path = Path(f"{root_dir}/.config/yahpo_gym").expanduser().absolute()
         self._root_dir = root_dir
         self._validate()
         self._dataset_id = dataset_id
@@ -62,8 +64,10 @@ class LCBenchSurrogate(AbstractHPOData):
         )
 
     @staticmethod
-    def set_local_config(root_dir: str) -> None:
+    def set_local_config(root_dir: str | None = None) -> None:
         warnings.warn(f"The local config for LCBench was updated with {root_dir}")
+        root_dir = os.environ["HOME"] if root_dir is None else root_dir
+        local_config.settings_path = Path(f"{root_dir}/.config/yahpo_gym").expanduser().absolute()
         local_config.init_config()
         local_config.set_data_path(os.path.join(root_dir, "hpo_benchmarks"))
 
