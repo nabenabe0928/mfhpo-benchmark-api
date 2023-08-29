@@ -61,14 +61,18 @@ class LCBenchSurrogate(AbstractHPOData):
             f"Note that you need to simply tick `{_BENCH_NAME}` and click `Download`."
         )
 
-    def set_local_config(self) -> None:
-        warnings.warn(f"The local config for LCBench was updated with {self._root_dir}")
+    @staticmethod
+    def set_local_config(root_dir: str) -> None:
+        warnings.warn(f"The local config for LCBench was updated with {root_dir}")
         local_config.init_config()
-        local_config.set_data_path(os.path.join(self._root_dir, "hpo_benchmarks"))
+        local_config.set_data_path(os.path.join(root_dir, "hpo_benchmarks"))
+
+    def _set_local_config(self) -> None:
+        self.set_local_config(root_dir=self._root_dir)
 
     def _check_benchdata_availability(self) -> None:
         if INIT_LOCAL_CONFIG:
-            self.set_local_config()
+            self._set_local_config()
 
         super()._check_benchdata_availability()
 
