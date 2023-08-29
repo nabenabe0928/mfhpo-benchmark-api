@@ -4,9 +4,9 @@ import shutil
 import unittest
 
 from benchmark_apis import HPOBench, HPOLib, JAHSBench201, LCBench
-from benchmark_apis.hpo.abstract_bench import DATA_DIR_NAME
 
 
+DATA_DIR_NAME = os.path.join(os.environ["HOME"], "hpo_benchmarks")
 DUMMY_DIR_NAME = os.path.join(os.environ["HOME"], "dummy-mfhpo-test")
 IS_LOCAL = eval(os.environ.get("MFHPO_BENCH_TEST", "False"))
 

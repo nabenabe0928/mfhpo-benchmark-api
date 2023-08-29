@@ -8,7 +8,6 @@ from benchmark_apis.abstract_api import AbstractHPOData, RESULT_KEYS, ResultType
 from benchmark_apis.hpo.abstract_bench import (
     AbstractBench,
     DATASET_NAMES,
-    DATA_DIR_NAME,
     DISC_SPACES,
     FIDEL_SPACES,
     _BenchClassVars,
@@ -47,18 +46,19 @@ class HPOLibTabular(AbstractHPOData):
 
     _CONSTS = _HPODataClassVars(
         url="http://ml4aad.org/wp-content/uploads/2019/01/fcnet_tabular_benchmarks.tar.gz",
-        dir=os.path.join(DATA_DIR_NAME, _BENCH_NAME),
+        bench_name=_BENCH_NAME,
     )
 
-    def __init__(self, dataset_name: str):
-        self._benchdata_path = os.path.join(self._CONSTS.dir, f"{dataset_name}.pkl")
+    def __init__(self, dataset_name: str, root_dir: str):
+        self._root_dir = root_dir
+        self._benchdata_path = os.path.join(self.dir_name, f"{dataset_name}.pkl")
         self._validate()
         self._db = pickle.load(open(self._benchdata_path, "rb"))
 
     @property
     def install_instruction(self) -> str:
         return (
-            f"\033[31m\t$ cd {self._CONSTS.dir}\n"
+            f"\033[31m\t$ cd {self.dir_name}\n"
             f"\t$ wget {self._CONSTS.url}\n"
             "\t$ tar xf fcnet_tabular_benchmarks.tar.gz\n"
             "\t$ mv fcnet_tabular_benchmarks/*.hdf5 .\n"
@@ -119,12 +119,12 @@ class HPOLib(AbstractBench):
     _N_SEEDS: ClassVar[int] = 4
 
     def get_benchdata(self) -> HPOLibTabular:
-        return HPOLibTabular(self.dataset_name)
+        return HPOLibTabular(self.dataset_name, root_dir=self._root_dir)
 
     def _fetch_result(self, eval_config: dict[str, int], benchdata: HPOLibTabular | None) -> RowDataType:
         if self._load_every_call:
             config_id = "".join([str(eval_config[k]) for k in _KEY_ORDER])
-            data_path = os.path.join(DATA_DIR_NAME, _BENCH_NAME, self.dataset_name, f"{config_id}.json")
+            data_path = os.path.join(self.dir_name, _BENCH_NAME, self.dataset_name, f"{config_id}.json")
             with open(data_path, mode="r") as f:
                 row = json.load(f)
                 row[_TARGET_KEYS.loss] = [{int(fidel): v for fidel, v in r.items()} for r in row[_TARGET_KEYS.loss]]

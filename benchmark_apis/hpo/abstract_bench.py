@@ -58,7 +58,6 @@ class _BenchClassVars:
 
 
 curdir = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR_NAME: Final[str] = os.path.join(os.environ.get("BENCHMARK_ROOT_PATH", os.environ["HOME"]), "hpo_benchmarks")
 DATASET_NAME_PATH: Final[str] = os.path.join(curdir, "dataset_names.json")
 CONT_SPACE_PATH: Final[str] = os.path.join(curdir, "continuous_search_spaces.json")
 DISC_SPACE_PATH: Final[str] = os.path.join(curdir, "discrete_search_spaces.json")
@@ -75,7 +74,6 @@ FIDEL_SPACES: Final[dict[str, _FidelValueRanges]] = {
     for bench_name, fidels in json.load(open(FIDEL_SPACE_PATH)).items()
 }
 DATASET_NAMES: Final[dict[str, list[str]]] = json.load(open(DATASET_NAME_PATH))
-warnings.warn(f"Use the benchmark data stored in {DATA_DIR_NAME}")
 
 
 class AbstractBench(AbstractAPI):
@@ -90,8 +88,11 @@ class AbstractBench(AbstractAPI):
         target_metrics: list[str] | None = None,
         keep_benchdata: bool = True,
         load_every_call: bool = False,
+        root_dir: str | None = None,
     ):
         super().__init__(seed=seed)
+        self._root_dir = os.environ["HOME"] if root_dir is None else root_dir
+        warnings.warn(f"Use the root directory {self._root_dir} to load the benchmark dataset")
         self._target_metrics = target_metrics[:] if target_metrics is not None else [RESULT_KEYS.loss]
         self._dataset_id = dataset_id
         self._load_every_call = load_every_call
@@ -237,6 +238,10 @@ class AbstractBench(AbstractAPI):
             else CS.CategoricalHyperparameter(name=name, choices=[str(i) for i in range(len(choices))])
             for name, choices in self._CONSTS.disc_space.items()
         ]
+
+    @property
+    def dir_name(self) -> str:
+        return os.path.join(self._root_dir, "hpo_benchmarks")
 
     @property
     def dataset_name_for_dir(self) -> str | None:

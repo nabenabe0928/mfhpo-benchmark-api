@@ -17,7 +17,6 @@ from benchmark_apis.hpo.abstract_bench import (
     AbstractBench,
     CONT_SPACES,
     DATASET_NAMES,
-    DATA_DIR_NAME,
     FIDEL_SPACES,
     _BenchClassVars,
     _FidelKeys,
@@ -43,10 +42,11 @@ class LCBenchSurrogate(AbstractHPOData):
 
     _CONSTS = _HPODataClassVars(
         url="https://syncandshare.lrz.de/getlink/fiCMkzqj1bv1LfCUyvZKmLvd/",
-        dir=os.path.join(DATA_DIR_NAME, _BENCH_NAME),
+        bench_name=_BENCH_NAME,
     )
 
-    def __init__(self, dataset_id: str, target_metrics: list[str]):
+    def __init__(self, dataset_id: str, target_metrics: list[str], root_dir: str):
+        self._root_dir = root_dir
         self._validate()
         self._dataset_id = dataset_id
         self._target_metrics = target_metrics[:]
@@ -57,15 +57,14 @@ class LCBenchSurrogate(AbstractHPOData):
     def install_instruction(self) -> str:
         return (
             f"\033[31m\tAccess to {self._CONSTS.url} and download `{_BENCH_NAME}.zip` from the website.\n"
-            f"\tAfter that, please unzip `{_BENCH_NAME}.zip` in {self._CONSTS.dir}.\033[0m\n"
+            f"\tAfter that, please unzip `{_BENCH_NAME}.zip` in {self.dir_name}.\033[0m\n"
             f"Note that you need to simply tick `{_BENCH_NAME}` and click `Download`."
         )
 
-    @staticmethod
-    def set_local_config() -> None:
-        warnings.warn(f"The local config for LCBench was updated with {DATA_DIR_NAME}")
+    def set_local_config(self) -> None:
+        warnings.warn(f"The local config for LCBench was updated with {self._root_dir}")
         local_config.init_config()
-        local_config.set_data_path(DATA_DIR_NAME)
+        local_config.set_data_path(os.path.join(self._root_dir, "hpo_benchmarks"))
 
     def _check_benchdata_availability(self) -> None:
         if INIT_LOCAL_CONFIG:
@@ -141,7 +140,7 @@ class LCBench(AbstractBench):
 
     def get_benchdata(self) -> LCBenchSurrogate:
         _, dataset_id = _DATASET_INFO[self._dataset_id]
-        return LCBenchSurrogate(dataset_id=dataset_id, target_metrics=self._target_metrics)
+        return LCBenchSurrogate(dataset_id=dataset_id, target_metrics=self._target_metrics, root_dir=self._root_dir)
 
     def __call__(  # type: ignore[override]
         self,

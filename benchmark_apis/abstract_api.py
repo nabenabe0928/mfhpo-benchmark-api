@@ -39,7 +39,7 @@ class _TargetMetricKeys:
 @dataclass(frozen=True)
 class _HPODataClassVars:
     url: str
-    dir: str
+    bench_name: str
 
 
 class ResultType(TypedDict):
@@ -55,6 +55,7 @@ RESULT_KEYS = _ResultKeys()
 
 class AbstractHPOData(metaclass=ABCMeta):
     _CONSTS: _HPODataClassVars
+    _root_dir: str
 
     @abstractmethod
     def __call__(self, eval_config: dict[str, int | float | str | bool], fidels: dict[str, int | float]) -> ResultType:
@@ -79,16 +80,20 @@ class AbstractHPOData(metaclass=ABCMeta):
             raise NotImplementedError(f"Child class of {cls.__name__} must define _CONSTS.")
 
     @property
+    def dir_name(self) -> str:
+        return os.path.join(self._root_dir, "hpo_benchmarks", self._CONSTS.bench_name)
+
+    @property
     def full_install_instruction(self) -> str:
         return (
-            f"Could not find the dataset at {self._CONSTS.dir}.\n"
-            f"Download the dataset and place the file at {self._CONSTS.dir}.\n"
+            f"Could not find the dataset at {self.dir_name}.\n"
+            f"Download the dataset and place the file at {self.dir_name}.\n"
             "You can download the dataset via:\n"
             f"{self.install_instruction}"
         )
 
     def _check_benchdata_availability(self) -> None:
-        if not os.path.exists(self._CONSTS.dir):
+        if not os.path.exists(self.dir_name):
             raise FileNotFoundError(self.full_install_instruction)
 
 

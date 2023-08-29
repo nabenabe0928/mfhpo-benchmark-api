@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from benchmark_apis.abstract_api import (
@@ -15,7 +14,6 @@ from benchmark_apis.hpo.abstract_bench import (
     AbstractBench,
     CONT_SPACES,
     DATASET_NAMES,
-    DATA_DIR_NAME,
     DISC_SPACES,
     FIDEL_SPACES,
     _BenchClassVars,
@@ -39,24 +37,25 @@ class JAHSBenchSurrogate(AbstractHPOData):
 
     _CONSTS = _HPODataClassVars(
         url="https://ml.informatik.uni-freiburg.de/research-artifacts/jahs_bench_201/v1.1.0/assembled_surrogates.tar",
-        dir=os.path.join(DATA_DIR_NAME, _BENCH_NAME),
+        bench_name=_BENCH_NAME,
     )
 
-    def __init__(self, dataset_name: str, target_metrics: list[str]):
+    def __init__(self, dataset_name: str, target_metrics: list[str], root_dir: str):
+        self._root_dir = root_dir
         self._validate()
         self._target_metrics = target_metrics[:]
         _metrics = [getattr(_TARGET_KEYS, tm) for tm in self._target_metrics]
         metrics = list(set(_metrics + [_TARGET_KEYS.runtime]))
         self._surrogate = jahs_bench.Benchmark(
-            task=dataset_name, download=False, save_dir=self._CONSTS.dir, metrics=metrics
+            task=dataset_name, download=False, save_dir=self.dir_name, metrics=metrics
         )
 
     @property
     def install_instruction(self) -> str:
         return (
-            f"\033[31m\t$ cd {self._CONSTS.dir}\n"
+            f"\033[31m\t$ cd {self.dir_name}\n"
             f"\t$ wget {self._CONSTS.url}\n"
-            f"\tThen untar `assembled_surrogates.tar` in {self._CONSTS.dir}.\033[0m"
+            f"\tThen untar `assembled_surrogates.tar` in {self.dir_name}.\033[0m"
         )
 
     def __call__(self, eval_config: dict[str, int | float | str | bool], fidels: dict[str, int | float]) -> ResultType:
@@ -119,7 +118,9 @@ class JAHSBench201(AbstractBench):
     )
 
     def get_benchdata(self) -> JAHSBenchSurrogate:
-        return JAHSBenchSurrogate(dataset_name=self.dataset_name, target_metrics=self._target_metrics)
+        return JAHSBenchSurrogate(
+            dataset_name=self.dataset_name, target_metrics=self._target_metrics, root_dir=self._root_dir
+        )
 
     def __call__(  # type: ignore[override]
         self,
